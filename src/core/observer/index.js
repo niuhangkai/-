@@ -51,7 +51,11 @@ export class Observer {
     def(value, '__ob__', this)
     // 数组
     if (Array.isArray(value)) {
+      // 是否可以使用 __proto__
+      // export const hasProto = '__proto__' in {}
+      // __proto__ 属性是在 IE11+ 才开始支持
       if (hasProto) {
+        // 设置数组实例的 __proto__ 属性
         protoAugment(value, arrayMethods)
       } else {
         copyAugment(value, arrayMethods, arrayKeys)
@@ -96,7 +100,7 @@ export class Observer {
  */
 function protoAugment (target, src: Object) {
   /* eslint-disable no-proto */
-  target.__proto__ = src
+  target.__proto__ = src·
   /* eslint-enable no-proto */
 }
 
@@ -175,6 +179,7 @@ export function defineReactive (
   const getter = property && property.get
   const setter = property && property.set
   // 满足getter不存在 arguments长度为2，特殊边界情况处理
+  // 当用户通过Object.defineProperty定义的属性，设置了get函数，val就是undefined，不执行深度观测
   if ((!getter || setter) && arguments.length === 2) {
     val = obj[key]
   }
@@ -188,10 +193,11 @@ export function defineReactive (
     // 访问属性触发get，依赖搜集，搜集当前的Watcher
     get: function reactiveGetter () {
       // getter存在尝试执行获取值，没有的话直接返回val
+      // getter 常量中保存的是属性原有的 get 函数，如果 getter 存在那么直接调用该函数，并以该函数的返回值作为属性的值，保证属性的原有读取操作正常运作
       const value = getter ? getter.call(obj) : val
       // 依赖搜集
       // 如果此时存在Dep.target 存在当前计算的Watcher,就是需要被搜集的依赖
-      // 这里的会在执行_render()时候访问到
+      // 这里的会在执行_render()时候访问到,当前存在等待搜集的依赖才会执行
       if (Dep.target) {
         // 执行Watcher类里面的addDep，最终会调用addSub()方法，将其添加到subs这个数组中,作为订阅者
         dep.depend()
@@ -207,22 +213,29 @@ export function defineReactive (
     },
     // 设置属性触发set，派发更新
     set: function reactiveSetter (newVal) {
+      // 获取新值用来和旧值做对比
       const value = getter ? getter.call(obj) : val
       /* eslint-disable no-self-compare */
+      // 值和原来的相等 或者 原来的都是NaN的情况(NaN !== NaN)
       if (newVal === value || (newVal !== newVal && value !== value)) {
         return
       }
       /* eslint-enable no-self-compare */
+      // initRender中调用defineReactive传递的customSetter函数
+      // 作用是当你尝试修改 vm.$attrs 属性的值时，打印一段信息：$attrs 属性是只读的。这就是 customSetter 函数的作用，用来打印辅助信息，
       if (process.env.NODE_ENV !== 'production' && customSetter) {
         customSetter()
       }
       // #7981: for accessor properties without setter
+      // 有getter没有setter的访问器属性
       if (getter && !setter) return
+      // 如果属性原来拥有自身的 set 函数，那么应该继续使用该函数来设置属性的值，从而保证属性原有的设置操作不受影响
       if (setter) {
         setter.call(obj, newVal)
       } else {
         val = newVal
       }
+      // 假如我们为属性设置的新值是一个数组或者纯对象，那么该数组或纯对象是未被观测的，所以需要对新值进行观测
       childOb = !shallow && observe(newVal)
       dep.notify()
     }

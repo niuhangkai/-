@@ -4,8 +4,9 @@
  */
 
 import { def } from '../util/index'
-
+// 先缓存原来的数组类型的prototype
 const arrayProto = Array.prototype
+// 对数组变异方法的拦截，arrayMethods.__proto__ === Array.prototype
 export const arrayMethods = Object.create(arrayProto)
 
 const methodsToPatch = [
