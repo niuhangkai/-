@@ -118,10 +118,12 @@ export default class Watcher {
    * 2.获得被观察目标的值
    */
   get () {
+    // 把当前正在计算的渲染Watcher(页面初次渲染)
     pushTarget(this)
     let value
     const vm = this.vm
     try {
+      // 渲染Watcher执行updateComponent逻辑
       value = this.getter.call(vm, vm)
     } catch (e) {
       if (this.user) {
@@ -135,7 +137,9 @@ export default class Watcher {
       if (this.deep) {
         traverse(value)
       }
+      // 恢复到上一次正在计算的target
       popTarget()
+      // 
       this.cleanupDeps()
     }
     return value
@@ -146,10 +150,12 @@ export default class Watcher {
    */
   addDep (dep: Dep) {
     const id = dep.id
+    // 当前id不存在进行添加
     if (!this.newDepIds.has(id)) {
       this.newDepIds.add(id)
       this.newDeps.push(dep)
       if (!this.depIds.has(id)) {
+        // dep的方法，把当前Watcher添加到subs里面，数据发生变化时候可以通知到Watcher更新
         dep.addSub(this)
       }
     }
@@ -158,6 +164,7 @@ export default class Watcher {
   /**
    * Clean up for dependency collection.
    */
+  // 清除一些依赖搜集
   cleanupDeps () {
     let i = this.deps.length
     while (i--) {

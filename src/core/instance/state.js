@@ -48,9 +48,11 @@ export function proxy (target: Object, sourceKey: string, key: string) {
 export function initState (vm: Component) {
   vm._watchers = []
   const opts = vm.$options
+  // 代理props以及把Props转为响应式
   if (opts.props) initProps(vm, opts.props)
   if (opts.methods) initMethods(vm, opts.methods)
   if (opts.data) {
+    // 代理data以及把data转为响应式
     initData(vm)
   } else {
     observe(vm._data = {}, true /* asRootData */)
@@ -69,7 +71,9 @@ function initProps (vm: Component, propsOptions: Object) {
   const keys = vm.$options._propKeys = []
   const isRoot = !vm.$parent
   // root instance props should be converted
+  // 不是根节点不会被Observer观测
   if (!isRoot) {
+    // toggleObserving 方法可以设置决定是否执行Observer
     toggleObserving(false)
   }
   for (const key in propsOptions) {
@@ -77,9 +81,10 @@ function initProps (vm: Component, propsOptions: Object) {
     const value = validateProp(key, propsOptions, propsData, vm)
     /* istanbul ignore else */
     if (process.env.NODE_ENV !== 'production') {
+      // hyphenate方法把驼峰转为短横线分割
       const hyphenatedKey = hyphenate(key)
       if (isReservedAttribute(hyphenatedKey) ||
-          config.isReservedAttr(hyphenatedKey)) {
+        config.isReservedAttr(hyphenatedKey)) {
         warn(
           `"${hyphenatedKey}" is a reserved attribute and cannot be used as component prop.`,
           vm
@@ -110,10 +115,13 @@ function initProps (vm: Component, propsOptions: Object) {
 }
 
 function initData (vm: Component) {
+  // 获取到用户options中的data
   let data = vm.$options.data
+  // 代理到_data中
   data = vm._data = typeof data === 'function'
     ? getData(data, vm)
     : data || {}
+  // 判断是不是对象
   if (!isPlainObject(data)) {
     data = {}
     process.env.NODE_ENV !== 'production' && warn(
@@ -123,6 +131,7 @@ function initData (vm: Component) {
     )
   }
   // proxy data on instance
+  // 遍历所有的key，如果已经在methods或者props定义了，开始环境会报错
   const keys = Object.keys(data)
   const props = vm.$options.props
   const methods = vm.$options.methods
@@ -144,10 +153,12 @@ function initData (vm: Component) {
         vm
       )
     } else if (!isReserved(key)) {
+      // 把data中的东西代理到vm实例上，可以通过this.xxx访问
       proxy(vm, `_data`, key)
     }
   }
   // observe data
+  // 观测data
   observe(data, true /* asRootData */)
 }
 
@@ -227,7 +238,7 @@ export function defineComputed (
     sharedPropertyDefinition.set = userDef.set || noop
   }
   if (process.env.NODE_ENV !== 'production' &&
-      sharedPropertyDefinition.set === noop) {
+    sharedPropertyDefinition.set === noop) {
     sharedPropertyDefinition.set = function () {
       warn(
         `Computed property "${key}" was assigned to but it has no setter.`,
@@ -253,7 +264,7 @@ function createComputedGetter (key) {
   }
 }
 
-function createGetterInvoker(fn) {
+function createGetterInvoker (fn) {
   return function computedGetter () {
     return fn.call(this, this)
   }

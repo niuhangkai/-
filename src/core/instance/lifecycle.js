@@ -198,17 +198,20 @@ export function mountComponent (
       const endTag = `vue-perf-end:${id}`
 
       mark(startTag)
+      // _render() 生成vnode
       const vnode = vm._render()
       mark(endTag)
       measure(`vue ${name} render`, startTag, endTag)
 
       mark(startTag)
+      // 把vnode通过__PATCH__转为正真的dom
       vm._update(vnode, hydrating)
       mark(endTag)
       measure(`vue ${name} patch`, startTag, endTag)
     }
   } else {
     updateComponent = () => {
+      // render过程中会访问到Object.defineProperty中的getter
       vm._update(vm._render(), hydrating)
     }
   }
@@ -221,6 +224,7 @@ export function mountComponent (
   /**
    * 三种Watcher，computed Watcher，user Watcher，render Watcher
    */
+  // updateComponent 作为渲染Watcher的getter传入
   new Watcher(vm, updateComponent, noop, {
     before () {
       if (vm._isMounted && !vm._isDestroyed) {
