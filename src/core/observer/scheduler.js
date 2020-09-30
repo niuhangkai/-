@@ -14,11 +14,14 @@ import {
 
 export const MAX_UPDATE_COUNT = 100
 
+// 渲染队列数组
 const queue: Array<Watcher> = []
 const activatedChildren: Array<Component> = []
 let has: { [key: number]: ?true } = {}
 let circular: { [key: number]: number } = {}
+// 标志位
 let waiting = false
+// 标志位，开始更新会把flushing设置为true
 let flushing = false
 let index = 0
 
@@ -161,11 +164,16 @@ function callActivatedHooks (queue) {
  * Jobs with duplicate IDs will be skipped unless it's
  * pushed when the queue is being flushed.
  */
+// 将观察者放入队列中
 export function queueWatcher (watcher: Watcher) {
+  // Watcher创建时候唯一id
   const id = watcher.id
+  // has用来记录队列中的Watcher，防止重复搜集
   if (has[id] == null) {
     has[id] = true
+    // 标志位，开始更新会把flushing设置为true。此处表示队列正在执行更新
     if (!flushing) {
+      // 入队操作
       queue.push(watcher)
     } else {
       // if already flushing, splice the watcher based on its id
@@ -177,6 +185,7 @@ export function queueWatcher (watcher: Watcher) {
       queue.splice(i + 1, 0, watcher)
     }
     // queue the flush
+    // 保证只执行一次
     if (!waiting) {
       waiting = true
 
@@ -184,6 +193,8 @@ export function queueWatcher (watcher: Watcher) {
         flushSchedulerQueue()
         return
       }
+      // nextTict相当于setTimeout(() => {},0),但是setTimeout并不是最优选择
+      // setTimeout是宏任务，宏任务包含了微任务。所以通过nextTick把数据更新放在微任务中
       nextTick(flushSchedulerQueue)
     }
   }

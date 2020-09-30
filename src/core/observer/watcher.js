@@ -139,7 +139,7 @@ export default class Watcher {
       }
       // 恢复到上一次正在计算的target
       popTarget()
-      // 
+      //
       this.cleanupDeps()
     }
     return value
@@ -189,11 +189,14 @@ export default class Watcher {
    */
   update () {
     /* istanbul ignore else */
+    // 原来的计算属性this.computed
     if (this.lazy) {
       this.dirty = true
-    } else if (this.sync) {
+    } else if (this.sync) {  // 当值变化发生时是否同步更新变化，渲染函数不是同步变化更新，而是会放到一个异步更新队列中
       this.run()
     } else {
+      // 队列Watcher
+      // 将观察者放到一个队列中等待所有突变完成之后统一执行更新
       queueWatcher(this)
     }
   }
