@@ -75,7 +75,7 @@ export default class Watcher {
     this.cb = cb
     this.id = ++uid // uid for batching
     this.active = true
-    this.dirty = this.lazy // for lazy watchers
+    this.dirty = this.lazy // for lazy watchers 为计算属性定制的，dirty为true代表还没有对当前的计算属性watcher进行求值
     // 此处为避免依赖重复搜集
     this.deps = []
     this.newDeps = []
@@ -104,7 +104,7 @@ export default class Watcher {
         )
       }
     }
-    // lazy为true，不对表达式求值，直接返回undefined
+    // lazy为true，既当前watcher为计算属性时候， 不对立即表达式求值，直接返回undefined，计算属性到此结束，只有在访问到计算属性才会触发depend方法
     this.value = this.lazy
       ? undefined
       : this.get()
@@ -189,14 +189,14 @@ export default class Watcher {
    */
   update () {
     /* istanbul ignore else */
-    // 原来的计算属性this.computed
+    // 原来的计算属性this.computed，计算属性被触发被触发update
     if (this.lazy) {
       this.dirty = true
-    } else if (this.sync) {  // 当值变化发生时是否同步更新变化，渲染函数不是同步变化更新，而是会放到一个异步更新队列中
+    } else if (this.sync) {  // 当值变化发生时是否同步更新变化，渲染函数不是同步变化更新，而是会放到一个异步更新队列中queueWatcher
       this.run()
     } else {
       // 队列Watcher
-      // 将观察者放到一个队列中等待所有突变完成之后统一执行更新
+      // 将观察者放到一个队列中等待调用栈被清空之后按照一定的顺序执行更新
       queueWatcher(this)
     }
   }
@@ -206,9 +206,14 @@ export default class Watcher {
    * Will be called by the scheduler.
    */
   run () {
+    // 用来标志当前观察者是否处于激活或者可用状态
     if (this.active) {
+      // 再次求值，如果是渲染函数，这时候它的getter就是updateComponent,当修改数据时候重新渲染重新生成dom
       const value = this.get()
+      // 渲染函数不会执行这里的if，updateComponent 的返回值是undefined
+      // computedWatcher计算属性的watcher只有值不相同时候才会触发响应
       if (
+        // 新值和旧值作对比，如果值不一样或者值是一个对象，或者deep存在
         value !== this.value ||
         // Deep watchers and watchers on Object/Arrays should fire even
         // when the value is the same, because the value may
@@ -219,7 +224,18 @@ export default class Watcher {
         // set new value
         const oldValue = this.value
         this.value = value
+        // 执行用户自定义的watcher，并且把新值和旧值传递进去,对于渲染watcher，this.cb是空noop函数
+        /**
+         * new Watcher(vm, updateComponent, noop, {
+            before () {
+              if (vm._isMounted && !vm._isDestroyed) {
+                callHook(vm, 'beforeUpdate')
+              }
+            }
+          }, true)
+          */
         if (this.user) {
+          // 如果用户定义的watcher出现错误提示，expression是表达式的字符串
           try {
             this.cb.call(this.vm, value, oldValue)
           } catch (e) {
@@ -236,8 +252,11 @@ export default class Watcher {
    * Evaluate the value of the watcher.
    * This only gets called for lazy watchers.
    */
+  // 对lazy watcher求值
   evaluate () {
+    // 重新触发getter，此时的this.get()是用户自定义的计算属性函数
     this.value = this.get()
+    // 代表已经对计算属性的watcher进行了求值
     this.dirty = false
   }
 

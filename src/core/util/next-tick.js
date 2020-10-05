@@ -30,6 +30,8 @@ function flushCallbacks () {
 // where microtasks have too high a priority and fire in between supposedly
 // sequential events (e.g. #4521, #6690, which have workarounds)
 // or even between bubbling of the same event (#6566).
+// 2.5版本中使用的是微任务+宏任务结合，因为可能会出现某些问题，所以优先使用微任务，最后采用宏任务
+
 let timerFunc
 
 // The nextTick behavior leverages the microtask queue, which can be accessed
@@ -39,7 +41,8 @@ let timerFunc
 // completely stops working after triggering a few times... so, if native
 // Promise is available, we will use it:
 /* istanbul ignore next, $flow-disable-line */
-// 优先检测是否自持Promise，支持的话使用 Promise 注册 microtask
+// 优先检测是否自持Promise，支持的话使用 Promise 注册 microtask微任务
+// 将flushCallbacks 优先注册为微任务
 if (typeof Promise !== 'undefined' && isNative(Promise)) {
   const p = Promise.resolve()
   timerFunc = () => {
@@ -78,7 +81,7 @@ if (typeof Promise !== 'undefined' && isNative(Promise)) {
   }
   isUsingMicroTask = true
 } else if (typeof setImmediate !== 'undefined' && isNative(setImmediate)) {
-  // setImmediate 只有IE以及Node.js 0.10+实现了该方法
+  // setImmediate 只有高版本 IE 和 Edge 才支持的特性以及Node.js 0.10+实现了该方法
   // Fallback to setImmediate.
   // Technically it leverages the (macro) task queue,
   // but it is still a better choice than setTimeout.
@@ -87,7 +90,7 @@ if (typeof Promise !== 'undefined' && isNative(Promise)) {
   }
 } else {
   // Fallback to setTimeout.
-  // setTimeout是作为宏任务最后的备选方案
+  // setTimeout是作为最后的备选方案
   timerFunc = () => {
     setTimeout(flushCallbacks, 0)
   }
@@ -126,9 +129,15 @@ if (typeof Promise !== 'undefined' && isNative(Promise)) {
 
  */
 // cb flushSchedulerQueue()
+// 在render.js中包装了this.$nextTick
+// render.js以及global-api中都有
+// Vue.prototype.$nextTick = function (fn: Function) {
+//   return nextTick(fn, this)
+// }
+// 返回一个promise,this.$nextTick().then((res) => {.....})
 export function nextTick (cb?: Function, ctx?: Object) {
   let _resolve
-  // 将cb添加到一个函数当中，此时回调函数并没有被执行
+  // 将cb添加到一个匿名函数当中，这样的作用是cb执行失败可以被try catch到，不影响后续执行。此时回调函数并没有被执行
   callbacks.push(() => {
     if (cb) {
       try {

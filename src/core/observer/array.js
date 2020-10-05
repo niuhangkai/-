@@ -22,10 +22,13 @@ const methodsToPatch = [
 /**
  * Intercept mutating methods and emit events
  */
+// 对数组方法进行遍历
 methodsToPatch.forEach(function (method) {
   // cache original method
+  // 先缓存原生的数组方法
   const original = arrayProto[method]
   def(arrayMethods, method, function mutator (...args) {
+    // 先获取原生方法执行的结果
     const result = original.apply(this, args)
     const ob = this.__ob__
     let inserted

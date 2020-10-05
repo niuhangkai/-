@@ -43,7 +43,7 @@ export class Observer {
   constructor(value: any) {
     // 获取当前的value
     this.value = value
-    // 
+    //
     this.dep = new Dep()
     this.vmCount = 0
     // 通过Object.defineProperty方法给value添加一个__ob__属性，属性的值为当前实例
@@ -56,6 +56,7 @@ export class Observer {
       // __proto__ 属性是在 IE11+ 才开始支持
       if (hasProto) {
         // 设置数组实例的 __proto__ 属性
+        // arrayMethods作用是修改原生数组方法
         protoAugment(value, arrayMethods)
       } else {
         copyAugment(value, arrayMethods, arrayKeys)
@@ -64,6 +65,7 @@ export class Observer {
       this.observeArray(value)
     } else {
       // 不是数组可能是对象的情况，遍历每一个对象属性，执行defineReactive
+      // 这里没有对数组做walk的defineReactive处理。所以vue不支持数组下标方式更改
       this.walk(value)
     }
   }
@@ -99,8 +101,9 @@ export class Observer {
  * the prototype chain using __proto__
  */
 function protoAugment (target, src: Object) {
+  // target原型链指向arrayMethods
   /* eslint-disable no-proto */
-  target.__proto__ = src·
+  target.__proto__ = src
   /* eslint-enable no-proto */
 }
 
@@ -156,6 +159,7 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
 /**
  * Define a reactive property on an Object.
  * 在对象上定义一个响应式属性
+ * 把对象变成响应式对象
  */
 export function defineReactive (
   // 对象
@@ -203,6 +207,7 @@ export function defineReactive (
         dep.depend()
         // 如果存在childOb，即子value是一个对象
         if (childOb) {
+          // 为了让Vue.set可以通知到
           childOb.dep.depend()
           if (Array.isArray(value)) {
             dependArray(value)
@@ -247,12 +252,14 @@ export function defineReactive (
  * triggers change notification if the property doesn't
  * already exist.
  */
+// 动态为数组或者对象添加属性
 export function set (target: Array<any> | Object, key: any, val: any): any {
   if (process.env.NODE_ENV !== 'production' &&
     (isUndef(target) || isPrimitive(target))
   ) {
     warn(`Cannot set reactive property on undefined, null, or primitive value: ${(target: any)}`)
   }
+
   if (Array.isArray(target) && isValidArrayIndex(key)) {
     target.length = Math.max(target.length, key)
     target.splice(key, 1, val)
