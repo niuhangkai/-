@@ -76,8 +76,10 @@ export function lifecycleMixin (Vue: Class<Component>) {
   Vue.prototype._update = function (vnode: VNode, hydrating?: boolean) {
     const vm: Component = this
     const prevEl = vm.$el
+    // prevVnode 在更新过程中是存在的，
     const prevVnode = vm._vnode
     const restoreActiveInstance = setActiveInstance(vm)
+    // 将vnode保留到vm._vnode中
     vm._vnode = vnode
     // Vue.prototype.__patch__ is injected in entry points
     // based on the rendering backend used.
@@ -89,7 +91,7 @@ export function lifecycleMixin (Vue: Class<Component>) {
     } else {
       // updates
       // 更新dom时候
-      // 两个参数都是虚拟dom
+      // 两个参数都是虚拟dom，prevVnode是上一个vnode，vnode是新的vnode
       vm.$el = vm.__patch__(prevVnode, vnode)
     }
     restoreActiveInstance()

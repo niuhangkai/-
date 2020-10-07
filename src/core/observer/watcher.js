@@ -65,7 +65,7 @@ export default class Watcher {
       this.user = !!options.user
       // computed Watcher计算属性的依赖缓存延迟计算，计算属性是惰性求值
       this.lazy = !!options.lazy
-      // 是否为同步求值并执行回调
+      // 是否为同步求值并执行回调,watch可配置sync:true来提升优先级，sync为true，在update方法会直接run方法，否则就会通过quenewatch加入到微任务异步去执行
       this.sync = !!options.sync
       // 实例钩子
       this.before = options.before
@@ -90,8 +90,9 @@ export default class Watcher {
     if (typeof expOrFn === 'function') {
       this.getter = expOrFn
     } else {
+      // 用户定义的watch expOrFn可能是字符串
       // 否则把expOrFn给到parsePath函数处理
-      // obj.a这种情况为字符串需要解析
+      // 比如用户定义的watch，监听obj.a这种情况为字符串需要解析
       this.getter = parsePath(expOrFn)
       if (!this.getter) {
         // getter函数不存在赋值为noop，空函数
@@ -107,6 +108,7 @@ export default class Watcher {
     // lazy为true，既当前watcher为计算属性时候， 不对立即表达式求值，直接返回undefined，计算属性到此结束，只有在访问到计算属性才会触发depend方法
     this.value = this.lazy
       ? undefined
+      // 渲染watch和用户watch会执行这里的求值
       : this.get()
   }
 
@@ -118,12 +120,13 @@ export default class Watcher {
    * 2.获得被观察目标的值
    */
   get () {
-    // 把当前正在计算的渲染Watcher(页面初次渲染)
+    // 把当前正在计算的Watcher(页面渲染或者计算属性或者用户watch)通过pushTarget方法，把当前全局Dep.target设置为正在计算的Watcher
     pushTarget(this)
     let value
     const vm = this.vm
     try {
-      // 渲染Watcher执行updateComponent逻辑
+      // 如果是渲染Watcher执行updateComponent逻辑
+      // 如果是user watch,这里的getter就是parsePath方法返回的匿名函数。第一个参数vm会被作为obj传入parsePath方法，从而访问到data中定义的属性，vm.data.xxx,触发到reactiveGetter中的get函数，完成依赖搜集
       value = this.getter.call(vm, vm)
     } catch (e) {
       if (this.user) {
@@ -134,6 +137,7 @@ export default class Watcher {
     } finally {
       // "touch" every property so they are all tracked as
       // dependencies for deep watching
+      // 如果是user watch，配置了deep为true，则通过traverse方法遍历触发里面所有的getter
       if (this.deep) {
         traverse(value)
       }

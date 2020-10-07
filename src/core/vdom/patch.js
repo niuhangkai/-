@@ -32,17 +32,27 @@ export const emptyNode = new VNode('', {}, [])
 
 const hooks = ['create', 'activate', 'update', 'remove', 'destroy']
 
+// 用来比对两个VNode是不是相同，只要满足key相等并且下面两个条件中的任意一个
 function sameVnode (a, b) {
   return (
+    // 这里的key就是v-for中的写的key值
     a.key === b.key && (
       (
+        // 对比tag是否相等
         a.tag === b.tag &&
+        //  对比是不是都为注释节点
         a.isComment === b.isComment &&
+        // 里面的data是不是都存在(这里的data不是用户传入的data)
         isDef(a.data) === isDef(b.data) &&
+        // 是不是都是input类型
         sameInputType(a, b)
       ) || (
+        // 这些条件满足也是相同的vnode
+        // 是不是异步占位符节点
         isTrue(a.isAsyncPlaceholder) &&
+        // 都有异步函数
         a.asyncFactory === b.asyncFactory &&
+        //
         isUndef(b.asyncFactory.error)
       )
     )
@@ -52,6 +62,9 @@ function sameVnode (a, b) {
 function sameInputType (a, b) {
   if (a.tag !== 'input') return true
   let i
+  // isDef 不为undefined也不为null
+  // 如果typeA是input会返回text
+  // typeA = true && true && 'text'
   const typeA = isDef(i = a.data) && isDef(i = i.attrs) && i.type
   const typeB = isDef(i = b.data) && isDef(i = i.attrs) && i.type
   return typeA === typeB || isTextInputType(typeA) && isTextInputType(typeB)
@@ -710,8 +723,10 @@ export function createPatchFunction (backend) {
     }
   }
   // 最后返回patch函数 __PATCH__最终会调用这里的函数
-  // 
+  //
   // 函数把接受多个参数的函数变换成接受一个单一参数（最初函数的第一个参数）的函数，并且返回接受余下的参数而且返回结果的新函数的技术。
+
+  // 如果是更新dom,oldVnode以及vnode都会有值
   return function patch (oldVnode, vnode, hydrating, removeOnly) {
     // 判断是不是等于null或者undefined
     // 删除时候的逻辑
@@ -729,12 +744,15 @@ export function createPatchFunction (backend) {
       isInitialPatch = true
       createElm(vnode, insertedVnodeQueue)
     } else {
-      // 是不是真实的dom，第一次为true
+      // 是不是真实的dom，第一次首次渲染为true，之后的oldVnode和vnode都是VNode类型，会返回false
       const isRealElement = isDef(oldVnode.nodeType)
+      // sameVnode 判断两个vnode是不是相同的vnode
+      // 这里的两个vnode相同情况下执行的逻辑
       if (!isRealElement && sameVnode(oldVnode, vnode)) {
         // patch existing root node
         patchVnode(oldVnode, vnode, insertedVnodeQueue, null, null, removeOnly)
       } else {
+        // 两个vnode不相同的情况
         if (isRealElement) {
           // mounting to a real element
           // check if this is server-rendered content and if we can perform
@@ -764,14 +782,15 @@ export function createPatchFunction (backend) {
           oldVnode = emptyNodeAt(oldVnode)
         }
 
+         // 第一步：创建新节点， 把vnode挂载到真实的dom上
         // replacing existing element
         // e.g #app <body></body>
+        // 旧的dom节点
         const oldElm = oldVnode.elm
         // 获取父节点
         const parentElm = nodeOps.parentNode(oldElm)
 
         // create new node
-        // 把vnode挂载到真实的dom上
         createElm(
           vnode,
           insertedVnodeQueue,
@@ -783,6 +802,7 @@ export function createPatchFunction (backend) {
         )
 
         // update parent placeholder node element, recursively
+        // 第二步：更新父占位符节点
         if (isDef(vnode.parent)) {
           let ancestor = vnode.parent
           const patchable = isPatchable(vnode)
@@ -813,6 +833,7 @@ export function createPatchFunction (backend) {
         }
 
         // destroy old node
+        // 第三步：删除旧的节点
         if (isDef(parentElm)) {
           removeVnodes([oldVnode], 0, 0)
         } else if (isDef(oldVnode.tag)) {

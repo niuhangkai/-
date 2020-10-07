@@ -58,7 +58,9 @@ export function initState (vm: Component) {
   } else {
     observe(vm._data = {}, true /* asRootData */)
   }
+  // 初始化计算属性
   if (opts.computed) initComputed(vm, opts.computed)
+  // 初始化用户的watch
   if (opts.watch && opts.watch !== nativeWatch) {
     initWatch(vm, opts.watch)
   }
@@ -320,32 +322,79 @@ function initMethods (vm: Component, methods: Object) {
   }
 }
 
+// 初始化watch
 function initWatch (vm: Component, watch: Object) {
   for (const key in watch) {
+    // 遍历获取每一个watch，handler是当前的watch函数
     const handler = watch[key]
+    // 用户定义的watch可以是一个数组Array<function>
+    /*
+     * watch: {
+        // 可以是一个数组，里面写callback
+        name: [
+          function () {
+            console.log('name 改变了1')
+          },
+          function () {
+            console.log('name 改变了2')
+          }
+        ]
+      },
+     */
     if (Array.isArray(handler)) {
       for (let i = 0; i < handler.length; i++) {
+        // 对数组中的每一个函数执行createWatcher
         createWatcher(vm, key, handler[i])
       }
     } else {
+      // 不是数组的话直接执行createWatcher
       createWatcher(vm, key, handler)
     }
   }
 }
 
 function createWatcher (
+  // 当前实例
   vm: Component,
+  // expOrFn 函数名称
   expOrFn: string | Function,
+  // 用户的函数
   handler: any,
   options?: Object
 ) {
+  /**
+   * handler可以是一个对象,如果是一个对象，把原对象赋值给options，把原对象中的handler函数重新赋值给handler
+   * watch: {
+   *  name: {
+   *    handler() {},
+   *    deep:true
+   *  }
+   *
+   * }
+   */
   if (isPlainObject(handler)) {
     options = handler
     handler = handler.handler
   }
+  /**
+   * handler可以是一个字符串，对应methods中的函数名
+   * watch: {
+        // 字符串对应的就是methods中的方法，num改变的时候会调用watchChange方法
+        num: 'watchChange',
+      }
+   */
   if (typeof handler === 'string') {
     handler = vm[handler]
   }
+  // handler是回调函数
+  // expOrFn 函数名称
+  // options 如果handler是一个对象 options === handler
+  /**
+   * this.$watch的用法
+   * this.$watch('xxx', (new, old) => {
+      ...
+    })
+   */
   return vm.$watch(expOrFn, handler, options)
 }
 
@@ -381,12 +430,21 @@ export function stateMixin (Vue: Class<Component>) {
     options?: Object
   ): Function {
     const vm: Component = this
+    // 如果cb是一个对象,重新去执行createWatcher函数
+    /**
+     * this.$watch('xxx', {
+        handler() {},
+        deep:true
+      })
+     */
     if (isPlainObject(cb)) {
       return createWatcher(vm, expOrFn, cb, options)
     }
     options = options || {}
+    // user设置为true说明是一个user watch
     options.user = true
     const watcher = new Watcher(vm, expOrFn, cb, options)
+    // immediate，如果用户配置了，那就立即执行一次函数
     if (options.immediate) {
       try {
         cb.call(vm, watcher.value)
@@ -394,6 +452,13 @@ export function stateMixin (Vue: Class<Component>) {
         handleError(error, vm, `callback for immediate watcher "${watcher.expression}"`)
       }
     }
+    /**
+     * vm.$watch 返回一个取消观察函数，用来停止触发回调：
+
+      var unwatch = vm.$watch('a', cb)
+      // 之后取消观察
+      unwatch()
+     */
     return function unwatchFn () {
       watcher.teardown()
     }
