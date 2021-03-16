@@ -242,7 +242,7 @@ export function createComponentInstanceForVnode (
 }
 
 function installComponentHooks (data: VNodeData) {
-  // 
+  //
   const hooks = data.hook || (data.hook = {})
   // 组件内的钩子，所有组件都有 init prepatch insert... componentVNodeHooks函数
   for (let i = 0; i < hooksToMerge.length; i++) {

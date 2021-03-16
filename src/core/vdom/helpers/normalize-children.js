@@ -16,6 +16,16 @@ import { isFalse, isTrue, isDef, isUndef, isPrimitive } from 'shared/util'
 // thing with Array.prototype.concat. It is guaranteed to be only 1-level deep
 // because functional components already normalize their own children.
 // 只有一层深度的可以用这种方法
+// export function isPrimitive (value: any): boolean % checks {
+//   // 是不是基础数据类型
+//   return (
+//     typeof value === 'string' ||
+//     typeof value === 'number' ||
+//     // $flow-disable-line
+//     typeof value === 'symbol' ||
+//     typeof value === 'boolean'
+//   )
+// }
 export function simpleNormalizeChildren (children: any) {
   for (let i = 0; i < children.length; i++) {
     if (Array.isArray(children[i])) {

@@ -26,13 +26,27 @@ const ALWAYS_NORMALIZE = 2
 // wrapper function for providing a more flexible interface
 // without getting yelled at by flow
 export function createElement (
+  // VNode实例
   context: Component,
+  // tag标签
   tag: any,
+  // VNode相关的数据
   data: any,
+  // 子VNode
   children: any,
   normalizationType: any,
   alwaysNormalize: boolean
 ): VNode | Array<VNode> {
+  // export function isPrimitive (value: any): boolean % checks {
+  //   // 是不是基础数据类型
+  //   return (
+  //     typeof value === 'string' ||
+  //     typeof value === 'number' ||
+  //     // $flow-disable-line
+  //     typeof value === 'symbol' ||
+  //     typeof value === 'boolean'
+  //   )
+  // }
   if (Array.isArray(data) || isPrimitive(data)) {
     // 参数重载，对参数进行检测，因为data可以是空的
     normalizationType = children
@@ -71,7 +85,7 @@ export function _createElement (
   // 如果是false，那么就会返回一个空的注释节点
   if (!tag) {
     // in case of component :is set to falsy value
-    // 
+    //
     return createEmptyVNode()
   }
   // warn against non-primitive key
@@ -100,6 +114,7 @@ export function _createElement (
     // 如果是用户手写的render
     children = normalizeChildren(children)
   } else if (normalizationType === SIMPLE_NORMALIZE) {
+    // 只有一层深度的可以用这种方法
     children = simpleNormalizeChildren(children)
   }
   let vnode, ns

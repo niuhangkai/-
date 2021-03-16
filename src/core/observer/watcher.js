@@ -63,7 +63,7 @@ export default class Watcher {
       this.deep = !!options.deep
       // 是否为用户的Watcher
       this.user = !!options.user
-      // computed Watcher计算属性的依赖缓存延迟计算，计算属性是惰性求值
+      // computed Watcher计算属性的依赖缓存延迟计算，计算属性是惰性求值.
       this.lazy = !!options.lazy
       // 是否为同步求值并执行回调,watch可配置sync:true来提升优先级，sync为true，在update方法会直接run方法，否则就会通过quenewatch加入到微任务异步去执行
       this.sync = !!options.sync
@@ -201,6 +201,7 @@ export default class Watcher {
     } else {
       // 队列Watcher
       // 将观察者放到一个队列中等待调用栈被清空之后按照一定的顺序执行更新
+      // 只有渲染watcher才会进入到队列当中
       queueWatcher(this)
     }
   }

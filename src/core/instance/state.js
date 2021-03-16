@@ -181,6 +181,16 @@ export function getData (data: Function, vm: Component): any {
 const computedWatcherOptions = { lazy: true }
 
 // 初始化计算属性
+/**
+ *
+ 计算属性流程梳理，
+ 1.initState 初始化双向数据绑定、props、data、methods、watch、computed，等属性，执行initComputed
+ 2.定义常量watchers为空对象，遍历计算属性为其创建计算属性watch，加入到_watchers数组。这里不求值，初始化之后返回。
+ 3.在创建该组件之前，就已经在父组件中遍历了这个组件的计算属性，执行了defineComputed，
+ target是vue.prototype,key就是计算属性的函数名，定义了sharedPropertyDefinition共享属性，get就是我们的计算属性函数，
+ 最后给到Object.defineProperty做代理，当我们访问this.xxx或者render函数里面时候，就会触发sharedPropertyDefinition的get函数，也就是computedGetter。
+ 4.get函数，就是computedGetter，通过watcher.evaluate()触发求值。
+ */
 function initComputed (vm: Component, computed: Object) {
   // $flow-disable-line
   // 声明一个空对象
@@ -212,7 +222,13 @@ function initComputed (vm: Component, computed: Object) {
         computedWatcherOptions
       )
     }
-
+    // 组件中定义的计算属性已经在组件的prototype上定义了，
+    // 在global-api-extend.js中，创建子组件构造器时候提前赋值原型上，然后遍历执行defineComputed函数
+    /**
+     * if (Sub.options.computed) {
+        initComputed(Sub)
+      }
+     */
     // component-defined computed properties are already defined on the
     // component prototype. We only need to define computed properties defined
     // at instantiation here.
@@ -236,6 +252,7 @@ function initComputed (vm: Component, computed: Object) {
     get: createComputedGetter(key),
     set: userDef.set // 或 noop
   }
+  defineComputed的主要作用是让计算属性挂载到vm上面
  */
 export function defineComputed (
   target: any,
@@ -268,18 +285,31 @@ export function defineComputed (
     }
   }
   // 对计算属性进行代理，计算属性的render函数被执行会触发sharedPropertyDefinition的get函数
-  Object.defineProperty(target, key, sharedPropertyDefinition)
+  // 之所以能通过this.xxx访问到计算属性是因为这里做了代理。key就是xxx,render访问this.xxx会触发sharedPropertyDefinition
+    Object.defineProperty(target, key, sharedPropertyDefinition)
 }
 
+
 function createComputedGetter (key) {
+  // 当访问计算属性this.xxx时候就会触发这里的computedGetter函数
   return function computedGetter () {
     // watchers和_computedWatchers有着相同的索引，上面watchers赋值_computedWatchers也会有值
+    // this._computedWatchers就是计算属性watch
     const watcher = this._computedWatchers && this._computedWatchers[key]
     if (watcher) {
+      // 第一次的dirty为true
       if (watcher.dirty) {
-        // evaluate，手动触发watcher中的get求值
+        // evaluate，手动触发watcher中的get求值，执行getter.call()就是执行了计算属性的函数。访问里面的this.xxx触发依赖搜集和渲染watcher
         watcher.evaluate()
       }
+      /**
+       * export function popTarget () {
+          targetStack.pop()
+          Dep.target = targetStack[targetStack.length - 1]
+        }
+       */
+      // 这里的左右是在访问data中定义的属性时候，可以和计算属性双向搜集依赖
+      // 把 dep.Target 重置为渲染 watcher。Dep.target存在继续执行
       if (Dep.target) {
         watcher.depend()
       }

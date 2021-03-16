@@ -35,7 +35,7 @@ const hooks = ['create', 'activate', 'update', 'remove', 'destroy']
 // 用来比对两个VNode是不是相同，只要满足key相等并且下面两个条件中的任意一个
 function sameVnode (a, b) {
   return (
-    // 这里的key就是v-for中的写的key值
+    // 这里的key就是v-for中的写的key值，不推荐采用索引值当做key
     a.key === b.key && (
       (
         // 对比tag是否相等
@@ -44,7 +44,7 @@ function sameVnode (a, b) {
         a.isComment === b.isComment &&
         // 里面的data是不是都存在(这里的data不是用户传入的data)
         isDef(a.data) === isDef(b.data) &&
-        // 是不是都是input类型
+        // 是不是都是input类型，并且都具有相同的type
         sameInputType(a, b)
       ) || (
         // 这些条件满足也是相同的vnode
@@ -532,6 +532,8 @@ export function createPatchFunction (backend) {
     index,
     removeOnly
   ) {
+    // 比较并更新当前元素的差异
+    // 递归比较children
     if (oldVnode === vnode) {
       return
     }
@@ -746,10 +748,15 @@ export function createPatchFunction (backend) {
     } else {
       // 是不是真实的dom，第一次首次渲染为true，之后的oldVnode和vnode都是VNode类型，会返回false
       const isRealElement = isDef(oldVnode.nodeType)
+      // 此处的if条件为判断新旧节点是否相同
+
+
+
       // sameVnode 判断两个vnode是不是相同的vnode
-      // 这里的两个vnode相同情况下执行的逻辑
+      // 这里的两个vnode相同情况下执行的逻辑,!isRealElement不是真实的节点
       if (!isRealElement && sameVnode(oldVnode, vnode)) {
         // patch existing root node
+        // 相同patchVnode
         patchVnode(oldVnode, vnode, insertedVnodeQueue, null, null, removeOnly)
       } else {
         // 两个vnode不相同的情况
@@ -791,6 +798,7 @@ export function createPatchFunction (backend) {
         const parentElm = nodeOps.parentNode(oldElm)
 
         // create new node
+        // 传入vnode和parentElm就知道当前应该挂载在哪一个组件上
         createElm(
           vnode,
           insertedVnodeQueue,

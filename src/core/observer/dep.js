@@ -44,6 +44,7 @@ export default class Dep {
   notify () {
     // stabilize the subscriber list first
     const subs = this.subs.slice()
+    // 同步执行时候，flushSchedulerQueue()同步执行，无法保证执行的先后顺序，所以需要先排序一遍
     if (process.env.NODE_ENV !== 'production' && !config.async) {
       // subs aren't sorted in scheduler if not running async
       // we need to sort them now to make sure they fire in correct
