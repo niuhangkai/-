@@ -9,16 +9,19 @@
 <body>
     <div id="app">
       {{a}}
-      <div>
+      <!-- <div>
         124563
         <div>
           {{a}}
         </div>
-      </div>
+      </div> -->
     </div>
 </body>
 <script src="./vue.js"></script>
 <script>
+  var ComponentA = {
+    template: '<div>123</div>'
+  }
   new Vue({
     el:'#app',
     data(){
@@ -26,19 +29,17 @@
         a:1,
       }
     },
-//     render: function (createElement) {
-//   var self = this
-//   // return createElement('input', {
-//   //   domProps: {
-//   //     value: self.value
-//   //   },
-//   //   on: {
-//   //     input: function (event) {
-//   //       self.$emit('input', event.target.value)
-//   //     }
-//   //   }
-//   // })
-// }
+    components:{
+      'my-component-a': ComponentA
+    },
+    render: function (createElement) {
+    var self = this
+    return createElement('div',[
+    'test',
+      createElement('h1', ['一则头条1',createElement(ComponentA)]),
+      createElement('h1', '一则头条3'),
+    ])
+  }
   })
 </script>
 </html>

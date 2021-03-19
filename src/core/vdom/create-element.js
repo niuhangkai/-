@@ -121,9 +121,10 @@ export function _createElement (
   // 如果tag是string 比如div
   if (typeof tag === 'string') {
     let Ctor
+    // ns是name space的处理
     ns = (context.$vnode && context.$vnode.ns) || config.getTagNamespace(tag)
     if (config.isReservedTag(tag)) {
-      // 是不是原生的保留标签
+      // 是不是原生的保留标签config.isReservedTag方法
       // platform built-in elements
       if (process.env.NODE_ENV !== 'production' && isDef(data) && isDef(data.nativeOn)) {
         warn(
@@ -137,6 +138,8 @@ export function _createElement (
       )
     } else if ((!data || !data.pre) && isDef(Ctor = resolveAsset(context.$options, 'components', tag))) {
       // component
+      // 解析出来是一个组件
+      // createElement('h1', ['一则头条1',createElement('my-component-a')]) 创建组件这种情况会执行这个
       vnode = createComponent(Ctor, data, context, children, tag)
     } else {
       // 未知节点

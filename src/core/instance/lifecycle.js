@@ -75,18 +75,26 @@ export function lifecycleMixin (Vue: Class<Component>) {
   // update调用时机有两个，初始化和改变数据时候会调用
   Vue.prototype._update = function (vnode: VNode, hydrating?: boolean) {
     const vm: Component = this
-    const prevEl = vm.$el
+    const prevEl = vm.$el //更新才会执行的逻辑*************
     // prevVnode 在更新过程中是存在的，
-    const prevVnode = vm._vnode
-    const restoreActiveInstance = setActiveInstance(vm)
+    const prevVnode = vm._vnode //更新才会执行的逻辑*************
+    const restoreActiveInstance = setActiveInstance(vm) //更新才会执行的逻辑*************
     // 将vnode保留到vm._vnode中
     vm._vnode = vnode
     // Vue.prototype.__patch__ is injected in entry points
     // based on the rendering backend used.
+    // 第一次渲染会执行这里的逻辑
     if (!prevVnode) {
       // initial render
       // 初次渲染  __patch__方法定义在platforms - web - runtime - patch.js
-      // 首次调用第一个参数是真实的dom
+      // 在
+      // 首次调用第一个参数是真实的dom vnode:通过createElement创建出来的
+      // src\platforms\web\runtime\index.js----__patch__方法定义
+      /**
+       * Vue.prototype.__patch__ = patch
+       * 这个patch就是platforms - web - runtime - patch.js中的createPatchFunction函数，会返回一个patch函数，这里的参数就是下面的这些
+       */
+
       vm.$el = vm.__patch__(vm.$el, vnode, hydrating, false /* removeOnly */)
     } else {
       // updates
