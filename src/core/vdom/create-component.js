@@ -47,9 +47,11 @@ const componentVNodeHooks = {
     } else {
       // 返回vm实例
       const child = vnode.componentInstance = createComponentInstanceForVnode(
-        vnode,// 组件VNode
+        // App对象
+        vnode,
         // 这里的activeInstance 是一个全局变量，定义在initLifecycle.js中。
         // 在lifecycleMixin方法执行时候通过setActiveInstance方法赋值为当前的vm
+        // 初次执行时候就是通过let app = new Vue()出来的对象
         activeInstance
       )
       // 执行完各种实例化之后
@@ -102,14 +104,14 @@ const componentVNodeHooks = {
     }
   }
 }
-
+// hooksToMerge：[init,prepatch,insert,destroy]
 const hooksToMerge = Object.keys(componentVNodeHooks)
 
 export function createComponent (
-  // 组件类型 函数 对象
+  // 组件类型 可以是组件类、函数、对象
   Ctor: Class<Component> | Function | Object | void,
   data: ?VNodeData,
-  // vm 上下文
+  // vm实例 上下文
   context: Component,
   // 子Vnode
   children: ?Array<VNode>,
@@ -120,16 +122,27 @@ export function createComponent (
   }
   // 这里是vm.$options._base
   // Vue.prototype._base = Vue  global-api下的初始化
+  // 这里的baseCtor就是Vue的入口函数，Vue(options)
   const baseCtor = context.$options._base
 
   // plain options object: turn it into a constructor
+  // 如果是对象
+  /**
+   * {template:"<div>123</div>"}
+   */
   if (isObject(Ctor)) {
-    // Vue.extend global-api下的extend 把对象转成构造器
+    // Vue.extend global-api下的extend 把对象转成构造器 src\core\global-api\extend.js
     Ctor = baseCtor.extend(Ctor)
   }
 
   // if at this stage it's not a constructor or an async component factory,
   // reject.
+  /**
+   * 如果是上面extend处理过的，会返回Ctor =
+   * function VueComponent (options) {
+        this._init(options);
+      };
+   */
   if (typeof Ctor !== 'function') {
     if (process.env.NODE_ENV !== 'production') {
       warn(`Invalid Component definition: ${String(Ctor)}`, context)
@@ -161,28 +174,34 @@ export function createComponent (
 
   // resolve constructor options in case global mixins are applied after
   // component constructor creation
+  // 重新计算一些options
   resolveConstructorOptions(Ctor)
 
   // transform component v-model data into props & events
+  // 和v-model相关
   if (isDef(data.model)) {
     transformModel(Ctor.options, data)
   }
 
   // extract props
+  // 对props的处理
   const propsData = extractPropsFromVNodeData(data, Ctor, tag)
 
   // functional component
+  // 函数式组件的处理
   if (isTrue(Ctor.options.functional)) {
     return createFunctionalComponent(Ctor, propsData, data, context, children)
   }
 
   // extract listeners, since these needs to be treated as
   // child component listeners instead of DOM listeners
+  // 自定义事件的处理
   const listeners = data.on
   // replace with listeners with .native modifier
   // so it gets processed during parent component patch.
   data.on = data.nativeOn
 
+  // 抽象组件
   if (isTrue(Ctor.options.abstract)) {
     // abstract components do not keep anything
     // other than props & listeners & slot
@@ -197,14 +216,27 @@ export function createComponent (
 
   // install component management hooks onto the placeholder node
   // 安装组件钩子
+  // 在patch过程中也会安装一系列create，destroy等钩子，和那个类似
+  /**
+   * data = {
+   * hook:init(),
+   * destroy:destroy(),
+   * prepatch:prepatch(),
+   * insert:insert()
+   * }
+   *
+   */
   installComponentHooks(data)
 
   // return a placeholder vnode
   const name = Ctor.options.name || tag
-  // 生成组件VNode。和普通组件不一样，多一个componentOptions
+  // 生成组件VNode。和普通组件不一样，多一个componentOptions,另外没有children，名字被标记为vue-component
   const vnode = new VNode(
     `vue-component-${Ctor.cid}${name ? `-${name}` : ''}`,
     data, undefined, undefined, undefined, context,
+    // 这些参数是VNode中的componentOption，vnode中的componentOption.Ctor就是上面继承创建的Sub，组件构造函数，下面在组件的init钩子中，会执行createComponentInstanceForVnode方法，会通过new vnode.componentOptions.Ctor(options)调用执行
+    // 在vnode中this.componentOption = componentOption
+    // componentOption = {Ctor, propsData, listeners, tag, children}
     { Ctor, propsData, listeners, tag, children },
     asyncFactory
   )
@@ -225,9 +257,11 @@ export function createComponentInstanceForVnode (
   vnode: any, // we know it's MountedComponentVNode but flow doesn't // 当前组件vnode
   parent: any, // activeInstance in lifecycle state //当前vm实例  activeInstance
 ): Component {
+  // 定义options
   const options: InternalComponentOptions = {
-    // 标识位
+    // 标识位，这里在重新初始化Vue时候会用到做判断
     _isComponent: true,
+    // 占位符节点
     _parentVnode: vnode,
     parent
   }

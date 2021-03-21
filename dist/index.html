@@ -20,7 +20,16 @@
 <script src="./vue.js"></script>
 <script>
   var ComponentA = {
-    template: '<div>123</div>'
+    name: 'ComponentA',
+    data(){
+      return {
+        a:1111111
+      }
+    },
+    template: '<div>{{a}}</div>'
+  //  render:function (createElement) {
+  //   return createElement('div',{attrs:{id:'app22222'}},['wangwnagwnag1'])
+  //  }
   }
   new Vue({
     el:'#app',
@@ -32,14 +41,16 @@
     components:{
       'my-component-a': ComponentA
     },
-    render: function (createElement) {
-    var self = this
-    return createElement('div',[
-    'test',
-      createElement('h1', ['一则头条1',createElement(ComponentA)]),
-      createElement('h1', '一则头条3'),
-    ])
-  }
+    render:h => h(ComponentA)
+  //   render: function (createElement) {
+  //   var self = this
+  //   return createElement('my-component-a')
+  //   // return createElement('div',{attrs:{id:'app'}},[
+  //   // 'test',
+  //   //   createElement('h1', ['一则头条1',createElement(ComponentA)]),
+  //   //   createElement('h1', '一则头条3'),
+  //   // ])
+  // }
   })
 </script>
 </html>

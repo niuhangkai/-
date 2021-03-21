@@ -17,8 +17,11 @@ export function initExtend (Vue: GlobalAPI) {
    * Class inheritance
    */
   Vue.extend = function (extendOptions: Object): Function {
+    /**
+   * {template:"<div>123</div>"}
+   */
     extendOptions = extendOptions || {}
-    const Super = this // 这里的this是Vue 
+    const Super = this // 这里的this是Vue
     const SuperId = Super.cid // Vue.cid
     const cachedCtors = extendOptions._Ctor || (extendOptions._Ctor = {})
     // 多次使用一个组件时候，做一层优化
@@ -28,7 +31,7 @@ export function initExtend (Vue: GlobalAPI) {
     // 定义的组件name
     const name = extendOptions.name || Super.options.name
     if (process.env.NODE_ENV !== 'production' && name) {
-      // 开发环境会对组件的name做一层校验
+      // 开发环境会对组件的name规范做一层校验
       validateComponentName(name)
     }
 
@@ -48,9 +51,11 @@ export function initExtend (Vue: GlobalAPI) {
     // For props and computed properties, we define the proxy getters on
     // the Vue instances at extension time, on the extended prototype. This
     // avoids Object.defineProperty calls for each instance created.
+    // 重新初始化Props
     if (Sub.options.props) {
       initProps(Sub)
     }
+    // 重新初始化Computed
     if (Sub.options.computed) {
       initComputed(Sub)
     }

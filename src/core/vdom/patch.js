@@ -148,7 +148,7 @@ export function createPatchFunction (backend) {
   }
 
   let creatingElmInVPre = 0
-
+  // 循环深度优先遍历构建dom树
   function createElm (
     // 生成的VNode
     vnode,
@@ -170,16 +170,21 @@ export function createPatchFunction (backend) {
     }
 
     vnode.isRootInsert = !nested // for transition enter check
-    // 创建组件VNode
+    // 创建组件VNode,这里是组件在patch过程中执行的逻辑，否则是普通节点的逻辑
     if (createComponent(vnode, insertedVnodeQueue, parentElm, refElm)) {
       return
     }
     // 获取vnode中的data
+    /**
+     * data:{
+     * attrs:{id: 'xxx'}}
+     */
     const data = vnode.data
      // 获取vnode中的data
     const children = vnode.children
+     // tag 就是div什么的标签名
     const tag = vnode.tag
-    // tag 就是div什么的标签名
+    // 如果已经是文本节点，就没有tag
     if (isDef(tag)) {
       if (process.env.NODE_ENV !== 'production') {
         if (data && data.pre) {
@@ -207,6 +212,7 @@ export function createPatchFunction (backend) {
          * document.createElement(tagName)
          */
         : nodeOps.createElement(tag, vnode)
+        // 设置css作用域
       setScope(vnode)
 
       /* istanbul ignore if */
@@ -231,37 +237,52 @@ export function createPatchFunction (backend) {
       } else {
         // 如果VNode有子节点，就先创建子节点，插入顺序，先子后父
         // 那就循环遍历调用createElm方法，把当前的vnode.elm作为父节点传入
+        // 先执行的createChildren，所以子节点的insert会先执行
         createChildren(vnode, children, insertedVnodeQueue)
         if (isDef(data)) {
           invokeCreateHooks(vnode, insertedVnodeQueue)
         }
-        // 原生insert封装，将vnode.elm，也就是通过nodeOps.createElement(tag, vnode)创建的dom，insert到
+        // 原生insert封装，将vnode.elm，也就是通过nodeOps.createElement(tag, vnode)创建的dom
+        // 先执行上面的createChildren创建子元素，在insert到父节点中
         insert(parentElm, vnode.elm, refElm)
       }
 
       if (process.env.NODE_ENV !== 'production' && data && data.pre) {
         creatingElmInVPre--
       }
-      // 创建注释节点
+      // 如果是注释节点，创建注释节点
     } else if (isTrue(vnode.isComment)) {
       vnode.elm = nodeOps.createComment(vnode.text)
       insert(parentElm, vnode.elm, refElm)
     } else {
-      // 创建文本节点
+      // 否则创建文本节点
       vnode.elm = nodeOps.createTextNode(vnode.text)
       insert(parentElm, vnode.elm, refElm)
     }
   }
 
   // 创建组件
+  // vnode是组件vnode，比如App对象
   function createComponent (vnode, insertedVnodeQueue, parentElm, refElm) {
+    /**
+      data:{
+        hook:{
+          destroy:fn(),
+          init:fn(),
+          instrt:fn()
+        },
+        on:undefined
+      }
+       */
     let i = vnode.data
     // 判断data是否存在
     if (isDef(i)) {
       // keep-alive相关
       const isReactivated = isDef(vnode.componentInstance) && i.keepAlive
+      // 这里判断了一下是否存在init钩子，存在的话执行组件的init钩子
       if (isDef(i = i.hook) && isDef(i = i.init)) {
-        // 调用data中的hook 在创建组件时候执行的安装方法installComponentHooks(data)
+        // 调用data中的hook 在创建组件时候执行的安装方法installComponentHooks(data) src\core\vdom\create-component.js
+        // 传入当前vnode    create-component.js  36行开始，组件的钩子
         i(vnode, false /* hydrating */)
       }
       // after calling the init hook, if the vnode is a child component
@@ -319,13 +340,18 @@ export function createPatchFunction (backend) {
     insert(parentElm, vnode.elm, refElm)
   }
   // 插入节点操作
+  // ref是参考节点
   function insert (parent, elm, ref) {
     if (isDef(parent)) {
       if (isDef(ref)) {
         if (nodeOps.parentNode(ref) === parent) {
+          // 原生的insertBefore方法
+          // 在指定的已有子节点之前插入新的子节点
           nodeOps.insertBefore(parent, elm, ref)
         }
       } else {
+        // 原生的appendChild
+        // 向节点添加最后一个子节点
         nodeOps.appendChild(parent, elm)
       }
     }
@@ -339,6 +365,7 @@ export function createPatchFunction (backend) {
         checkDuplicateKeys(children)
       }
       for (let i = 0; i < children.length; ++i) {
+        // 递归调用createElm创建子节点，深度优先遍历，先子后父
         createElm(children[i], insertedVnodeQueue, vnode.elm, null, true, children, i)
       }
     } else if (isPrimitive(vnode.text)) {
@@ -838,7 +865,7 @@ export function createPatchFunction (backend) {
 
         // create new node
         // 传入vnode和parentElm就知道当前应该挂载在哪一个组件上
-        // 这个方法的作用是将VNode挂载到真实的dom上
+        // 这个方法的作用是将VNode挂载到真实的dom上，通过createChild方法，递归调用createElm深度优先创建子节点，构建完整dom树
         createElm(
           vnode,
           insertedVnodeQueue,
@@ -850,7 +877,7 @@ export function createPatchFunction (backend) {
         )
 
         // update parent placeholder node element, recursively
-        // 第二步：更新父占位符节点
+        // 第二步：递归更新父占位符节点，组件相关
         if (isDef(vnode.parent)) {
           let ancestor = vnode.parent
           const patchable = isPatchable(vnode)
@@ -881,7 +908,11 @@ export function createPatchFunction (backend) {
         }
 
         // destroy old node
-        // 第三步：删除旧的节点
+        // 第三步：删除旧的节点，原来的旧节点和新创建的节点一共有两个
+        /**
+         * <div id="app">{{a}}</div>这个节点是旧的节点会被删除
+         * <div id="app">1</div>这个节点是替换之后的，会同时存在两个节点，上面的那个会被删除掉
+         */
         if (isDef(parentElm)) {
           removeVnodes([oldVnode], 0, 0)
         } else if (isDef(oldVnode.tag)) {
