@@ -40,7 +40,7 @@ export default class Dep {
       Dep.target.addDep(this)
     }
   }
-
+  // 派发更新过程
   notify () {
     // stabilize the subscriber list first
     const subs = this.subs.slice()
@@ -53,6 +53,7 @@ export default class Dep {
     }
     // 遍歷Dep实例对象subs属性
     for (let i = 0, l = subs.length; i < l; i++) {
+      // 调用this.subs里面的每一个watcher的update方法
       subs[i].update()
     }
   }
