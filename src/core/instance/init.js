@@ -19,7 +19,7 @@ export function initMixin(Vue: Class<Component>) {
    * options中的_parentVnode就是当前App的vnode
    * options中的parent 就是app = new Vue()实例
    * 组件会通过src/core/vdom/create-component.js中的init钩子，执行createComponentInstanceForVnode方法
-   * 
+   *
    * const options: InternalComponentOptions = {
     // 标识位，这里在重新初始化Vue时候会用到做判断
     _isComponent: true,
@@ -72,9 +72,9 @@ export function initMixin(Vue: Class<Component>) {
       vm._renderProxy = vm;
     }
     // expose real self
-    vm._self = vm;
-    //  对vue实例一些属性进行赋值,比如$parent,$refs,$root等
-    initLifecycle(vm);
+    vm._self = vm
+    //  对vue实例一些属性进行赋值,比如$parent,$children,$refs,$root等
+    initLifecycle(vm)
     // 初始化实例的事件系统,事件即包括使用v-on或@注册的自定义事件
     initEvents(vm);
     // 初始化模板,为组件上$slots、$scopeSlots、$createElement、$attrs、$listeners赋值

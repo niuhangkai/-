@@ -124,6 +124,7 @@ export function renderMixin(Vue: Class<Component>) {
       // when parent component is patched.
       currentRenderingInstance = vm;
       // 拿到createElement创建返回的VNode,render是用户手写的或者通过compilerToFunction生成的
+      // render函数里面会调用_c方法，也就是vm.$createElemen这个函数作为参数
       vnode = render.call(vm._renderProxy, vm.$createElement);
     } catch (e) {
       handleError(e, vm, `render`);
