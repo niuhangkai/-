@@ -52,7 +52,7 @@ export default class Watcher {
     // 指明当前是哪个组件实例
     this.vm = vm
     if (isRenderWatcher) {
-      // 渲染Watcher，组件的_watcher就是渲染函数观察者
+      // _watcher代表渲染Watcher，组件的_watcher就是渲染函数观察者
       vm._watcher = this
     }
     // 所有的Watcher都会被加入_watchers 控制台打印

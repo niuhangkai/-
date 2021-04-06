@@ -386,12 +386,25 @@ function assertObjectType (name: string, value: any, vm: ?Component) {
  * Merge two option objects into a new one.
  * Core utility used in both instantiation and inheritance.
  */
+// vue合并策略
+/**
+ * parent:{
+ *  components:{},
+ * directives:{},
+ * filters:{},
+ * _base:function Vue(options) {}
+ * }
+ *
+ *
+*/
 export function mergeOptions (
+  // vue默认配置
   parent: Object,
   child: Object,
   vm?: Component
 ): Object {
   if (process.env.NODE_ENV !== 'production') {
+    // 对options里面的组件名称做一次校验
     checkComponents(child)
   }
 
@@ -420,16 +433,27 @@ export function mergeOptions (
 
   const options = {}
   let key
+  // 对原生options遍历
   for (key in parent) {
     mergeField(key)
   }
+  // 对用户传入的对象遍历
+  // 检查是否已经执行过合并，合并过的话，就不需要再次合并了
   for (key in child) {
     if (!hasOwn(parent, key)) {
       mergeField(key)
     }
   }
+  // strats是上面定义的一个{
+  //   activated:mergeHook(parentValue,childrenValue),
+  //   beforeCreate:mergeHook(parentValue,childrenValue),
+  //   props:mergeHook(parentValue,childrenValue),
+  //   watch:mergeHook(parentValue,childrenValue),
+  // }
   function mergeField (key) {
+    // 找到对应的key
     const strat = strats[key] || defaultStrat
+    // 执行 mergeHook 方法，将当前的options[key]赋值
     options[key] = strat(parent[key], child[key], vm, key)
   }
   return options
@@ -440,6 +464,7 @@ export function mergeOptions (
  * This function is used because child instances need access
  * to assets defined in its ancestor chain.
  */
+// 解析组件
 export function resolveAsset (
   options: Object,
   type: string,
@@ -450,6 +475,7 @@ export function resolveAsset (
   if (typeof id !== 'string') {
     return
   }
+  // options.components
   const assets = options[type]
   // check local registration variations first
   if (hasOwn(assets, id)) return assets[id]

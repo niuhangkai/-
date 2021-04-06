@@ -125,6 +125,8 @@ export function createComponent(
   /**
    * {template:"<div>123</div>"}
    */
+  // 如果这里是通过Vue.components全局注册的，name这里不会执行，因为Vue.components方法已经执行了extend
+  // 异步组件不满足，不会执行这里的逻辑
   if (isObject(Ctor)) {
     // Vue.extend global-api下的extend 把对象转成构造器 src\core\global-api\extend.js
     Ctor = baseCtor.extend(Ctor);
@@ -147,14 +149,20 @@ export function createComponent(
 
   // async component
   let asyncFactory;
-  // 异步组件
+  // 异步组件，异步组件函数不存在cid，执行下面逻辑
   if (isUndef(Ctor.cid)) {
+    // 异步组件的ctor是函数
     asyncFactory = Ctor;
+    // baseCtor 是Vue
+    // src\core\vdom\helpers\resolve-async-component.js
+    // 工厂函数第一次返回undefined
     Ctor = resolveAsyncComponent(asyncFactory, baseCtor);
     if (Ctor === undefined) {
+      // ctor是undefined时候返回
       // return a placeholder node for async component, which is rendered
       // as a comment node but preserves all the raw information for the node.
       // the information will be used for async server-rendering and hydration.
+      // 这个方法创建了一个空的异步vnode返回
       return createAsyncPlaceholder(asyncFactory, data, context, children, tag);
     }
   }

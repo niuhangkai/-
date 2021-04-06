@@ -48,6 +48,7 @@ export function initMixin(Vue: Class<Component>) {
     vm._isVue = true;
     // merge options
     // 在create-component文件中的createComponentInstanceForVnode 方法设置了_isComponent 为 true
+    // 组件的合并策略
     if (options && options._isComponent) {
       // 组件会执行这里的逻辑
       // optimize internal component instantiation
@@ -56,8 +57,10 @@ export function initMixin(Vue: Class<Component>) {
       // 初始化组件
       initInternalComponent(vm, options);
     } else {
+      // 普通节点的合并策略
       // 可以在页面中通过this.$options访问到options
       vm.$options = mergeOptions(
+        // 这里会返回一个Vue的options
         resolveConstructorOptions(vm.constructor),
         options || {},
         vm

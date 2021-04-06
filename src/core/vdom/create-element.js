@@ -138,7 +138,7 @@ export function _createElement (
       )
     } else if ((!data || !data.pre) && isDef(Ctor = resolveAsset(context.$options, 'components', tag))) {
       // component
-      // 解析出来是一个组件
+      // 解析出来是一个组件,通过resolveAsset方法解析，assets在src\core\global-api\assets.js下面挂载到了this.$options中
       // createElement('h1', ['一则头条1',createElement('my-component-a')]) 创建组件这种情况会执行这个
       vnode = createComponent(Ctor, data, context, children, tag)
     } else {

@@ -8,7 +8,10 @@
 </head>
 <body>
     <div id="app">
-      {{a}}
+     <com-a></com-a>
+     {{a}}
+     {{c}}
+     <!-- <com-b></com-b> -->
       <!-- <div>
         124563
         <div>
@@ -19,38 +22,74 @@
 </body>
 <script src="./vue.js"></script>
 <script>
-  var ComponentA = {
-    name: 'ComponentA',
-    data(){
-      return {
-        a:1111111
+   let comA = {
+      template:'<div>123123132</div>',
+      created(){
+        console.log('childrenA')
       }
-    },
-    template: '<div>{{a}}</div>'
-  //  render:function (createElement) {
-  //   return createElement('div',{attrs:{id:'app22222'}},['wangwnagwnag1'])
-  //  }
-  }
-  new Vue({
-    el:'#app',
-    data(){
-      return {
-        a:1,
+    }
+    // let comB = {
+    //   template:'<div>666666666</div>',
+    //   created(){
+    //     console.log('childrenB')
+    //   }
+    // }
+    Vue.mixin({
+      data() {
+        return {
+          a:1
+        }
       }
-    },
-    components:{
-      'my-component-a': ComponentA
-    },
-    render:h => h(ComponentA)
-  //   render: function (createElement) {
-  //   var self = this
-  //   return createElement('my-component-a')
-  //   // return createElement('div',{attrs:{id:'app'}},[
-  //   // 'test',
-  //   //   createElement('h1', ['一则头条1',createElement(ComponentA)]),
-  //   //   createElement('h1', '一则头条3'),
-  //   // ])
+      // created() {
+      //   console.log(11111111)
+      // }
+    })
+    new Vue({
+      el:'#app',
+      components:{
+        comA
+      },
+      data() {
+        return {
+          c:2
+        }
+      },
+      created() {
+          console.log(123465)
+      }
+    })
+  // var ComponentA = {
+  //   name: 'ComponentA',
+  //   data(){
+  //     return {
+  //       a:1111111
+  //     }
+  //   },
+  //   template: '<div>{{a}}</div>'
+  // //  render:function (createElement) {
+  // //   return createElement('div',{attrs:{id:'app22222'}},['wangwnagwnag1'])
+  // //  }
   // }
-  })
+  // new Vue({
+  //   el:'#app',
+  //   data(){
+  //     return {
+  //       a:1,
+  //     }
+  //   },
+  //   components:{
+  //     'my-component-a': ComponentA
+  //   },
+  //   render:h => h(ComponentA)
+  // //   render: function (createElement) {
+  // //   var self = this
+  // //   return createElement('my-component-a')
+  // //   // return createElement('div',{attrs:{id:'app'}},[
+  // //   // 'test',
+  // //   //   createElement('h1', ['一则头条1',createElement(ComponentA)]),
+  // //   //   createElement('h1', '一则头条3'),
+  // //   // ])
+  // // }
+  // })
 </script>
 </html>
