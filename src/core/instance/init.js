@@ -9,6 +9,7 @@ import { mark, measure } from "../util/perf";
 import { initLifecycle, callHook } from "./lifecycle";
 import { initProvide, initInjections } from "./inject";
 import { extend, mergeOptions, formatComponentName } from "../util/index";
+import { compile } from "../../platforms/web/compiler";
 
 let uid = 0;
 
@@ -31,6 +32,7 @@ export function initMixin(Vue: Class<Component>) {
   // 初始化通过创建组件new vnode中的componentOptions执行init
   return new vnode.componentOptions.Ctor(options);
    */
+
   Vue.prototype._init = function (options?: Object) {
     const vm: Component = this;
     // a uid

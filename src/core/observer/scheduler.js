@@ -143,6 +143,7 @@ function flushSchedulerQueue () {
 
   // devtool hook
   /* istanbul ignore if */
+  // 给开发工具使用
   if (devtools && config.devtools) {
     devtools.emit('flush')
   }

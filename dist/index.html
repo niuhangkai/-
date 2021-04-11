@@ -11,6 +11,7 @@
      <com-a></com-a>
      {{a}}
      {{c}}
+     {{e}}
      <!-- <com-b></com-b> -->
       <!-- <div>
         124563
@@ -50,11 +51,18 @@
       // },
       data() {
         return {
-          c:[2]
+          c:[2],
+          d:5555555,
+          e:{a:{b:1}}
         }
       },
       created() {
-          console.log(123465)
+          console.log(this.e,this.c,this.test)
+      },
+      computed: {
+        test() {
+          return this.c
+        }
       }
     })
   // var ComponentA = {
