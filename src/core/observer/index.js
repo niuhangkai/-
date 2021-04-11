@@ -48,6 +48,7 @@ export class Observer {
     this.vmCount = 0
     // 通过Object.defineProperty方法给value添加一个__ob__属性，属性的值为当前实例
     // 为什么不直接通过value.__ob__ = this方法去添加？因为__ob__属性不需要枚举，不然walk方法也会Observer到__ob__
+    // data自身也会被加一个__ob__
     def(value, '__ob__', this)
     // 数组
     if (Array.isArray(value)) {
@@ -75,7 +76,7 @@ export class Observer {
    * getter/setters. This method should only be called when
    * value type is Object.
    */
-  // 遍历每一个对象属性，执行defineReactive
+  // 遍历每一个对象属性，执行defineReactive，,实际上就是将data中的所有对象遍历
   walk (obj: Object) {
     const keys = Object.keys(obj)
     for (let i = 0; i < keys.length; i++) {
@@ -125,6 +126,10 @@ function copyAugment (target: Object, src: Object, keys: Array<string>) {
  * or the existing observer if the value already has one.
  */
 // 创建观察者 value观察的对象 asRootData是不是根数据
+/**
+ *
+ value是data中的数据 data:{a:1}
+ */
 export function observe (value: any, asRootData: ?boolean): Observer | void {
   // 如果value不是一个普通对象或者是VNode 直接返回
   if (!isObject(value) || value instanceof VNode) {

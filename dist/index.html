@@ -22,36 +22,35 @@
 </body>
 <script src="./vue.js"></script>
 <script>
-   let comA = {
-      template:'<div>123123132</div>',
-      created(){
-        console.log('childrenA')
-      }
-    }
+  //  let comA = {
+  //     template:'<div>123123132</div>',
+  //     created:[function(){}]
+  //     // created(){
+  //     //   console.log('childrenA')
+  //     // }
+  //   }
     // let comB = {
     //   template:'<div>666666666</div>',
     //   created(){
     //     console.log('childrenB')
     //   }
     // }
-    Vue.mixin({
-      data() {
-        return {
-          a:1
-        }
-      }
-      // created() {
-      //   console.log(11111111)
-      // }
-    })
+    // Vue.mixin({
+    //   data() {
+    //     return {
+    //       a:1
+    //     }
+    //   },
+    //   created: []
+    // })
     new Vue({
       el:'#app',
-      components:{
-        comA
-      },
+      // components:{
+      //   comA
+      // },
       data() {
         return {
-          c:2
+          c:[2]
         }
       },
       created() {
