@@ -8,17 +8,8 @@
 </head>
 <body>
     <div id="app">
-     <com-a></com-a>
-     {{a}}
-     {{c}}
-     {{e}}
-     <!-- <com-b></com-b> -->
-      <!-- <div>
-        124563
-        <div>
-          {{a}}
-        </div>
-      </div> -->
+     {{test}}
+     <button @click="changeC">click</button>
     </div>
 </body>
 <script src="./vue.js"></script>
@@ -57,7 +48,13 @@
         }
       },
       created() {
-          console.log(this.e,this.c,this.test)
+          console.log(this)
+      },
+      methods:{
+        changeC() {
+          debugger
+          this.c = 20
+        }
       },
       computed: {
         test() {
