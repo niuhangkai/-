@@ -96,12 +96,15 @@ export function renderMixin(Vue: Class<Component>) {
     const vm: Component = this;
     // _parentVnode 为组件中的_parentVnode
     /**
-     *  const options: InternalComponentOptions = {
+     *  组件init 钩子执行
+       export function createComponentInstanceForVnode(
+       const options: InternalComponentOptions = {
           // 标识位
           _isComponent: true,
           _parentVnode: vnode,
           parent
-        }
+         }
+        )
      */
     const { render, _parentVnode } = vm.$options;
     if (_parentVnode) {

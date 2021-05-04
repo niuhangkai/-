@@ -27,8 +27,9 @@ import {
 } from "weex/runtime/recycle-list/render-component-template";
 
 // inline hooks to be invoked on component VNodes during patch
+// 组件的hook
 const componentVNodeHooks = {
-  // 组件VNode
+  // 组件VNode，这里的init在update的patch过程中，会执行createComponent，也就是vnode.data.init()
   init(vnode: VNodeWithData, hydrating: boolean): ?boolean {
     if (
       // keep-alive相关
@@ -55,7 +56,7 @@ const componentVNodeHooks = {
       child.$mount(hydrating ? vnode.elm : undefined, hydrating);
     }
   },
-
+  // 这里在patch过程中，比对vnode为相同vnode的patch时候
   prepatch(oldVnode: MountedComponentVNode, vnode: MountedComponentVNode) {
     const options = vnode.componentOptions;
     const child = (vnode.componentInstance = oldVnode.componentInstance);
