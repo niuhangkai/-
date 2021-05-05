@@ -29,6 +29,7 @@ export function initRender(vm: Component) {
   // args order: tag, data, children, normalizationType, alwaysNormalize
   // internal version is used by render functions compiled from templates
   // 通过编译template的给最后传递一个false
+  // vm当前实例，a是tag。b是VNode数组（后面会normalize，处理为第三个参数），c是children
   vm._c = (a, b, c, d) => createElement(vm, a, b, c, d, false);
   // normalization is always applied for the public version, used in
   // user-written render functions.
@@ -93,6 +94,7 @@ export function renderMixin(Vue: Class<Component>) {
   };
 
   Vue.prototype._render = function (): VNode {
+
     const vm: Component = this;
     // _parentVnode 为组件中的_parentVnode
     /**

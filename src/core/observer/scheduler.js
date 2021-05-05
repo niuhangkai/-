@@ -93,7 +93,8 @@ function flushSchedulerQueue () {
 
 // 2.用户的自定义 watcher 要优先于渲染 watcher 执行；因为用户自定义 watcher 是在渲染 watcher 之前创建的。
 
-// 3.如果一个组件在父组件的 watcher 执行期间被销毁，那么它对应的 watcher 执行都可以被跳过，所以父组件的 watcher 应该先执行。
+// 3.如果一个组件在父组件的 watcher 执行期间被销毁，那么它对应的 watcher 执行都可以被跳过，所以父组件的 watcher 应该先执行
+// 这里的queue在下面queueWatcher时候会push进来
   queue.sort((a, b) => a.id - b.id)
 
   // do not cache length because more watchers might be pushed

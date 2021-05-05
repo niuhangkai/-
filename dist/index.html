@@ -7,13 +7,46 @@
   <title>Document</title>
 </head>
 <body>
+
     <div id="app">
-     {{test}}
-     <button @click="changeC">click</button>
+      <div v-for="item in a">
+        {{item}}
+      </div>
+      <button @click="p"></button>
     </div>
 </body>
 <script src="./vue.js"></script>
 <script>
+  new Vue({
+    el:'#app',
+    data:{
+      a:[1,2,3]
+    },
+    methods:{
+      p() {
+        debugger
+        this.a.push(4)
+      }
+    }
+  })
+// 初始的render函数
+(function anonymous() {
+    with(this) {
+        return _c('div', {
+            attrs: {
+                "id": "app"
+            }
+        }, [_l((a), function (item) {
+            return _c('div', [_v("\n        " + _s(item) + "\n      ")])
+        }), _v(" "), _c('button', {
+            on: {
+                "click": p
+            }
+        })], 2)
+    }
+})
+
+
   //  let comA = {
   //     template:'<div>123123132</div>',
   //     created:[function(){}]
@@ -35,33 +68,6 @@
     //   },
     //   created: []
     // })
-    new Vue({
-      el:'#app',
-      // components:{
-      //   comA
-      // },
-      data() {
-        return {
-          c:[2],
-          d:5555555,
-          e:{a:{b:1}}
-        }
-      },
-      created() {
-          console.log(this)
-      },
-      methods:{
-        changeC() {
-          debugger
-          this.c = 20
-        }
-      },
-      computed: {
-        test() {
-          return this.c
-        }
-      }
-    })
   // var ComponentA = {
   //   name: 'ComponentA',
   //   data(){
