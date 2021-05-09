@@ -220,7 +220,7 @@ export function createComponent(
    * hook:init(),
    * destroy:destroy(),
    * prepatch:prepatch(),
-   * insert:insert()
+   * insert:insert() //这里会执行mounted钩子
    * }
    *
    */
