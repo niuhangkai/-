@@ -11,7 +11,7 @@ import modules from './modules/index'
 import directives from './directives/index'
 import { genStaticKeys } from 'shared/util'
 import { isUnaryTag, canBeLeftOpenTag } from './util'
-
+// 这里是编译时候的baseOptions，和web平台相关的配置
 export const baseOptions: CompilerOptions = {
   expectHTML: true,
   modules,

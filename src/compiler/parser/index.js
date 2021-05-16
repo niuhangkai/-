@@ -200,7 +200,8 @@ export function parse (
       )
     }
   }
-
+  // 这里的options可以去baseOptions下查看
+  // 对template模板解析，解析过程中调用start，end，chars，comment等这些函数
   parseHTML(template, {
     warn,
     expectHTML: options.expectHTML,
@@ -208,6 +209,7 @@ export function parse (
     canBeLeftOpenTag: options.canBeLeftOpenTag,
     shouldDecodeNewlines: options.shouldDecodeNewlines,
     shouldDecodeNewlinesForHref: options.shouldDecodeNewlinesForHref,
+    // 是不是要保留注释节点
     shouldKeepComment: options.comments,
     outputSourceRange: options.outputSourceRange,
     start (tag, attrs, unary, start, end) {

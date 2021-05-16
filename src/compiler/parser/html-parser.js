@@ -14,16 +14,25 @@ import { isNonPhrasingTag } from 'web/compiler/util'
 import { unicodeRegExp } from 'core/util/lang'
 
 // Regular Expressions for parsing tags and attributes
+// 用来捕获标签上的属性
 const attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/
 const dynamicArgAttribute = /^\s*((?:v-[\w-]+:|@|:|#)\[[^=]+\][^\s"'<>\/=]*)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/
+// 字母下划线开头，后面是单词或者-.
+// namespace命名空间 ?代表是0个或者1个
 const ncname = `[a-zA-Z_][\\-\\.0-9_a-zA-Z${unicodeRegExp.source}]*`
+// 捕获分组
 const qnameCapture = `((?:${ncname}\\:)?${ncname})`
+// 以<开头
 const startTagOpen = new RegExp(`^<${qnameCapture}`)
+// 匹配结束标签以任意单词开头重复不管多少次，后面的/可以有可以没有用来匹配自闭和标签<img/>
 const startTagClose = /^\s*(\/?)>/
 const endTag = new RegExp(`^<\\/${qnameCapture}[^>]*>`)
 const doctype = /^<!DOCTYPE [^>]+>/i
 // #7298: escape - to avoid being passed as HTML comment when inlined in page
+// 注释节点
 const comment = /^<!\--/
+// 条件注释
+// <!--[if IE 6]>
 const conditionalComment = /^<!\[/
 
 // Special Elements (can contain anything)
@@ -50,26 +59,36 @@ function decodeAttr (value, shouldDecodeNewlines) {
   const re = shouldDecodeNewlines ? encodedAttrWithNewLines : encodedAttr
   return value.replace(re, match => decodingMap[match])
 }
-
+// 解析html，基于simple-html-parser做的，标签相当于一个栈数据结构
 export function parseHTML (html, options) {
   const stack = []
   const expectHTML = options.expectHTML
   const isUnaryTag = options.isUnaryTag || no
   const canBeLeftOpenTag = options.canBeLeftOpenTag || no
+  // 当前html位置索引
   let index = 0
+  // 保留上一次的文本和上一次标签
   let last, lastTag
+  // 循环html
   while (html) {
     last = html
     // Make sure we're not in a plaintext content element like script/style
+    //            判断lastTag是不是script,style,textarea
     if (!lastTag || !isPlainTextElement(lastTag)) {
+      // 判断是不是<
       let textEnd = html.indexOf('<')
+      // 如果是<并且为0，就是在第一个位置
       if (textEnd === 0) {
         // Comment:
+        // 判断是不是注释节点，comment上面定义了正则
         if (comment.test(html)) {
+          // 找到结束位置
           const commentEnd = html.indexOf('-->')
 
           if (commentEnd >= 0) {
+            // 是不是要保留注释节点
             if (options.shouldKeepComment) {
+              // 这里的方法commen方法就是在parseHTML（template,options）传入的,start,end,chars,comment等方法
               options.comment(html.substring(4, commentEnd), index, index + commentEnd + 3)
             }
             advance(commentEnd + 3)
@@ -78,16 +97,20 @@ export function parseHTML (html, options) {
         }
 
         // http://en.wikipedia.org/wiki/Conditional_comment#Downlevel-revealed_conditional_comment
+        // 如果是条件注释
         if (conditionalComment.test(html)) {
+          // 找到结尾注释
           const conditionalEnd = html.indexOf(']>')
 
           if (conditionalEnd >= 0) {
+            // 截取，前进到后面，continue本次循环，什么也不做
             advance(conditionalEnd + 2)
             continue
           }
         }
 
         // Doctype:
+        // 是不是一个doctype，如果是，直接截取，然后跳过
         const doctypeMatch = html.match(doctype)
         if (doctypeMatch) {
           advance(doctypeMatch[0].length)
@@ -95,6 +118,7 @@ export function parseHTML (html, options) {
         }
 
         // End tag:
+        // 结束标签的匹配
         const endTagMatch = html.match(endTag)
         if (endTagMatch) {
           const curIndex = index
@@ -104,6 +128,7 @@ export function parseHTML (html, options) {
         }
 
         // Start tag:
+        // 开始标签的匹配
         const startTagMatch = parseStartTag()
         if (startTagMatch) {
           handleStartTag(startTagMatch)
@@ -178,31 +203,44 @@ export function parseHTML (html, options) {
 
   // Clean up any remaining tags
   parseEndTag()
-
+/**
+ * 修改index的位置
+ * 比如
+ * <div>132</div>
+ * 通过advance索引+5处理的话就是
+ * 132</div>
+ */
   function advance (n) {
     index += n
     html = html.substring(n)
   }
-
+  // 匹配开始标签
   function parseStartTag () {
     const start = html.match(startTagOpen)
     if (start) {
       const match = {
         tagName: start[1],
+        // 保留属性
         attrs: [],
         start: index
       }
+      // 匹配到标签然后前进
       advance(start[0].length)
       let end, attr
+      // 匹配attr属性，比如:class="xxx" class="xxx" v-if="xxx"
       while (!(end = html.match(startTagClose)) && (attr = html.match(dynamicArgAttribute) || html.match(attribute))) {
         attr.start = index
+        // 每次匹配到就前进attr[0].length位
         advance(attr[0].length)
         attr.end = index
         match.attrs.push(attr)
       }
+      // 匹配到结束标签
       if (end) {
         match.unarySlash = end[1]
+        // 前进end[0].length位
         advance(end[0].length)
+        // 将index赋值给end
         match.end = index
         return match
       }
