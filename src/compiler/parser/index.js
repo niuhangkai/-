@@ -25,8 +25,10 @@ export const onRE = /^@|^v-on:/
 export const dirRE = process.env.VBIND_PROP_SHORTHAND
   ? /^v-|^@|^:|^\.|^#/
   : /^v-|^@|^:|^#/
+  // 解析v-for的正则, // v-for="item in lists"
 export const forAliasRE = /([\s\S]*?)\s+(?:in|of)\s+([\s\S]*)/
 export const forIteratorRE = /,([^,\}\]]*)(?:,([^,\}\]]*))?$/
+// 去除v-for的括号(item,index)
 const stripParensRE = /^\(|\)$/g
 const dynamicArgRE = /^\[.*\]$/
 
@@ -57,18 +59,29 @@ let platformMustUseProp
 let platformGetTagNamespace
 let maybeComponent
 
+// 创建ast节点
 export function createASTElement (
+  // 标签
   tag: string,
+  // 属性数组
   attrs: Array<ASTAttr>,
+  //
   parent: ASTElement | void
 ): ASTElement {
+  // 返回js对象
   return {
+    // 1是普通元素节点
     type: 1,
+    // 当前tag标签
     tag,
+    // 属性数组
     attrsList: attrs,
+    // 将attrs转换为一个键值对对象{xxx:xxx,}
     attrsMap: makeAttrsMap(attrs),
     rawAttrsMap: {},
+    // ast的父ast节点
     parent,
+    // 子ast
     children: []
   }
 }
@@ -116,10 +129,12 @@ export function parse (
       element = processElement(element, options)
     }
     // tree management
+    // 如果满足这个，证明根节点不是多个，否则就会抛出警告
     if (!stack.length && element !== root) {
       // allow root elements with v-if, v-else-if and v-else
       if (root.if && (element.elseif || element.else)) {
         if (process.env.NODE_ENV !== 'production') {
+          // 对节点做一个判断，边界处理
           checkRootConstraints(element)
         }
         addIfCondition(root, {
@@ -127,6 +142,7 @@ export function parse (
           block: element
         })
       } else if (process.env.NODE_ENV !== 'production') {
+        // 警告根节点只能有一个
         warnOnce(
           `Component template should contain exactly one root element. ` +
           `If you are using v-if on multiple elements, ` +
@@ -146,6 +162,7 @@ export function parse (
           const name = element.slotTarget || '"default"'
           ;(currentParent.scopedSlots || (currentParent.scopedSlots = {}))[name] = element
         }
+        // 建立父子关系,上面已经将elemment赋值给了currentParent,第二次进入页面时候会把当前的element去push到上一个currentParent中
         currentParent.children.push(element)
         element.parent = currentParent
       }
@@ -169,7 +186,7 @@ export function parse (
       postTransforms[i](element, options)
     }
   }
-
+  // 对文本节点的一些处理
   function trimEndingWhitespace (el) {
     // remove trailing whitespace node
     if (!inPre) {
@@ -183,7 +200,7 @@ export function parse (
       }
     }
   }
-
+  // 判断当前根节点是不是有多个或者有v-for的情况
   function checkRootConstraints (el) {
     if (el.tag === 'slot' || el.tag === 'template') {
       warnOnce(
@@ -212,9 +229,12 @@ export function parse (
     // 是不是要保留注释节点
     shouldKeepComment: options.comments,
     outputSourceRange: options.outputSourceRange,
+    // start的作用是创建ast树,ast树是一个js对象，并且通过treeManager做管理,建立父子关系,处理v-for,v-once,v-if等
+    // 标签   属性   是否是自闭和标签
     start (tag, attrs, unary, start, end) {
       // check namespace.
       // inherit parent ns if there is one
+      // 当前节点父节点
       const ns = (currentParent && currentParent.ns) || platformGetTagNamespace(tag)
 
       // handle IE svg bug
@@ -222,7 +242,24 @@ export function parse (
       if (isIE && ns === 'svg') {
         attrs = guardIESVGBug(attrs)
       }
-
+      // 创建ast的元素，返回一个js对象
+      /**
+       *  {
+          // 1是普通元素节点
+          type: 1,
+          // 当前tag标签
+          tag,
+          // 属性数组
+          attrsList: attrs,
+          // 将attrs转换为一个键值对对象{xxx:xxx,}
+          attrsMap: makeAttrsMap(attrs),
+          rawAttrsMap: {},
+          // ast的父ast节点
+          parent,
+          // 子ast
+          children: []
+        }
+       */
       let element: ASTElement = createASTElement(tag, attrs, currentParent)
       if (ns) {
         element.ns = ns
@@ -250,7 +287,7 @@ export function parse (
           }
         })
       }
-
+      // 禁止在模板中使用这些元素
       if (isForbiddenTag(element) && !isServerRendering()) {
         element.forbidden = true
         process.env.NODE_ENV !== 'production' && warn(
@@ -265,7 +302,7 @@ export function parse (
       for (let i = 0; i < preTransforms.length; i++) {
         element = preTransforms[i](element, options) || element
       }
-
+      // v-pre相关
       if (!inVPre) {
         processPre(element)
         if (element.pre) {
@@ -279,18 +316,22 @@ export function parse (
         processRawAttrs(element)
       } else if (!element.processed) {
         // structural directives
+        // 处理v-for的情况
         processFor(element)
         processIf(element)
+        // 处理v-once,给当前element增加一个once为true
         processOnce(element)
       }
-
+      // root是最终根节点
+      // 第一次不存在，将当前element（ast对象）赋值给root
       if (!root) {
         root = element
         if (process.env.NODE_ENV !== 'production') {
+          // 对template根节点做一个判断，不能有多个或者有v-for等情况
           checkRootConstraints(root)
         }
       }
-
+      // 不是自闭和标签，把element赋值给currentParent
       if (!unary) {
         currentParent = element
         stack.push(element)
@@ -298,27 +339,31 @@ export function parse (
         closeElement(element)
       }
     },
-
+    // 解析end标签会调用这里
     end (tag, start, end) {
+      // 获取最后一位，因为解析顺序是一个栈数据结构
       const element = stack[stack.length - 1]
       // pop stack
       stack.length -= 1
+      // 结束的时候重新指向currentParent
       currentParent = stack[stack.length - 1]
       if (process.env.NODE_ENV !== 'production' && options.outputSourceRange) {
         element.end = end
       }
       closeElement(element)
     },
-
+    // 创建文本ast，处理文本节点。此处在截取html时候，是文本节点会调用这里
     chars (text: string, start: number, end: number) {
       if (!currentParent) {
         if (process.env.NODE_ENV !== 'production') {
+          // 没有根节点包裹，纯文本节点警告
           if (text === template) {
             warnOnce(
               'Component template requires a root element, rather than just text.',
               { start }
             )
           } else if ((text = text.trim())) {
+            // 或者定义在了根节点之外
             warnOnce(
               `text "${text}" outside root element will be ignored.`,
               { start }
@@ -329,6 +374,7 @@ export function parse (
       }
       // IE textarea placeholder bug
       /* istanbul ignore if */
+      // IE中的bug处理
       if (isIE &&
         currentParent.tag === 'textarea' &&
         currentParent.attrsMap.placeholder === text
@@ -337,6 +383,7 @@ export function parse (
       }
       const children = currentParent.children
       if (inPre || text.trim()) {
+        // 判断currentParent是不是style或者script，是的话直接返回text
         text = isTextTag(currentParent) ? text : decodeHTMLCached(text)
       } else if (!children.length) {
         // remove the whitespace-only node right after an opening tag
@@ -359,7 +406,9 @@ export function parse (
         }
         let res
         let child: ?ASTNode
+        // 解析文本节点
         if (!inVPre && text !== ' ' && (res = parseText(text, delimiters))) {
+          // 表达式的ast
           child = {
             type: 2,
             expression: res.expression,
@@ -367,6 +416,7 @@ export function parse (
             text
           }
         } else if (text !== ' ' || !children.length || children[children.length - 1].text !== ' ') {
+          // 纯文本节点
           child = {
             type: 3,
             text
@@ -381,10 +431,12 @@ export function parse (
         }
       }
     },
+    // 注释节点
     comment (text: string, start, end) {
       // adding anyting as a sibling to the root node is forbidden
       // comments should still be allowed, but ignored
       if (currentParent) {
+        // 注释节点增加isComment
         const child: ASTText = {
           type: 3,
           text,
@@ -479,7 +531,7 @@ function processKey (el) {
     el.key = exp
   }
 }
-
+//
 function processRef (el) {
   const ref = getBindingAttr(el, 'ref')
   if (ref) {
@@ -490,9 +542,12 @@ function processRef (el) {
 
 export function processFor (el: ASTElement) {
   let exp
+  // 获取到v-for对应的表达式
   if ((exp = getAndRemoveAttr(el, 'v-for'))) {
+    // 解析v-for的值，返回res对象。里面包含了遍历的值都是什么
     const res = parseFor(exp)
     if (res) {
+      // 将res拓展到el上面
       extend(el, res)
     } else if (process.env.NODE_ENV !== 'production') {
       warn(
@@ -509,12 +564,18 @@ type ForParseResult = {
   iterator1?: string;
   iterator2?: string;
 };
-
+// 解析v-for的值，返回res
 export function parseFor (exp: string): ?ForParseResult {
+  // v-for="item in lists"
   const inMatch = exp.match(forAliasRE)
+  // 没有匹配到
   if (!inMatch) return
   const res = {}
+  // 获取到遍历的data或者lists
+  // '5141'.match(/5(1)(4)/)
+  // ["514", "1", "4", index: 0, input: "5141", groups: undefined]
   res.for = inMatch[2].trim()
+  // 去除(item,index)的括号，inMatch[1]是第一组
   const alias = inMatch[1].trim().replace(stripParensRE, '')
   const iteratorMatch = alias.match(forIteratorRE)
   if (iteratorMatch) {
@@ -528,11 +589,21 @@ export function parseFor (exp: string): ?ForParseResult {
   }
   return res
 }
-
+// 处理v-if
 function processIf (el) {
+  // 获取v-if对应的表达式
+  // v-if="isShow"
   const exp = getAndRemoveAttr(el, 'v-if')
   if (exp) {
     el.if = exp
+     /**
+     * 给当前element添加
+     * el.if:isShow
+     * el.ifConditions: {
+     * exp:isShow,
+     * block:<div>
+     * }
+     */
     addIfCondition(el, {
       exp: exp,
       block: el
@@ -541,6 +612,7 @@ function processIf (el) {
     if (getAndRemoveAttr(el, 'v-else') != null) {
       el.else = true
     }
+    // 否则添加elseif的表达式
     const elseif = getAndRemoveAttr(el, 'v-else-if')
     if (elseif) {
       el.elseif = elseif
@@ -581,14 +653,14 @@ function findPrevElement (children: Array<any>): ASTElement | void {
     }
   }
 }
-
+// v-if时候添加
 export function addIfCondition (el: ASTElement, condition: ASTIfCondition) {
   if (!el.ifConditions) {
     el.ifConditions = []
   }
   el.ifConditions.push(condition)
 }
-
+// 处理v-once
 function processOnce (el) {
   const once = getAndRemoveAttr(el, 'v-once')
   if (once != null) {

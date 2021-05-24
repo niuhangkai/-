@@ -16,11 +16,14 @@ type TextParseResult = {
   expression: string,
   tokens: Array<string | { '@binding': string }>
 }
-
+// 解析文本
 export function parseText (
+  // 文本
   text: string,
+  // 分隔符
   delimiters?: [string, string]
 ): TextParseResult | void {
+  // 如果用户传入了分隔符，重新构造一个正则表达式
   const tagRE = delimiters ? buildRegex(delimiters) : defaultTagRE
   if (!tagRE.test(text)) {
     return
@@ -33,15 +36,18 @@ export function parseText (
     index = match.index
     // push text token
     if (index > lastIndex) {
+      // 对一些非插值纯文本情况做处理{{text}}:{{text}}
       rawTokens.push(tokenValue = text.slice(lastIndex, index))
       tokens.push(JSON.stringify(tokenValue))
     }
     // tag token
+    // 过滤器处理
     const exp = parseFilters(match[1].trim())
     tokens.push(`_s(${exp})`)
     rawTokens.push({ '@binding': exp })
     lastIndex = index + match[0].length
   }
+  // 对剩余文本做处理
   if (lastIndex < text.length) {
     rawTokens.push(tokenValue = text.slice(lastIndex))
     tokens.push(JSON.stringify(tokenValue))

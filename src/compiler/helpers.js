@@ -180,6 +180,12 @@ export function getBindingAttr (
 // doesn't get processed by processAttrs.
 // By default it does NOT remove it from the map (attrsMap) because the map is
 // needed during codegen.
+// 这里获取到对应的表达式
+/**
+ *
+ *v-for="(item,index) in data"
+ *v-if="xxx"
+ */
 export function getAndRemoveAttr (
   el: ASTElement,
   name: string,

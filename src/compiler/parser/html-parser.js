@@ -20,7 +20,7 @@ const dynamicArgAttribute = /^\s*((?:v-[\w-]+:|@|:|#)\[[^=]+\][^\s"'<>\/=]*)(?:\
 // 字母下划线开头，后面是单词或者-.
 // namespace命名空间 ?代表是0个或者1个
 const ncname = `[a-zA-Z_][\\-\\.0-9_a-zA-Z${unicodeRegExp.source}]*`
-// 捕获分组
+// 捕获分组是(),(?:)的意思是不捕获
 const qnameCapture = `((?:${ncname}\\:)?${ncname})`
 // 以<开头
 const startTagOpen = new RegExp(`^<${qnameCapture}`)
@@ -62,6 +62,7 @@ function decodeAttr (value, shouldDecodeNewlines) {
 // 解析html，基于simple-html-parser做的，标签相当于一个栈数据结构
 export function parseHTML (html, options) {
   const stack = []
+  // 这里初始化为true
   const expectHTML = options.expectHTML
   const isUnaryTag = options.isUnaryTag || no
   const canBeLeftOpenTag = options.canBeLeftOpenTag || no
@@ -73,7 +74,7 @@ export function parseHTML (html, options) {
   while (html) {
     last = html
     // Make sure we're not in a plaintext content element like script/style
-    //            判断lastTag是不是script,style,textarea
+    //            判断lastTag是不是scr ipt,style,textarea
     if (!lastTag || !isPlainTextElement(lastTag)) {
       // 判断是不是<
       let textEnd = html.indexOf('<')
@@ -122,13 +123,21 @@ export function parseHTML (html, options) {
         const endTagMatch = html.match(endTag)
         if (endTagMatch) {
           const curIndex = index
+          // 前进匹配到的标签length位数
           advance(endTagMatch[0].length)
           parseEndTag(endTagMatch[1], curIndex, index)
           continue
         }
 
         // Start tag:
-        // 开始标签的匹配
+        // 开始标签的匹配，如果匹配到，会返回一个match对象
+        /**
+         * match = {
+         *      tagName: start[1],
+                attrs: [],
+                start: index
+         * }
+         */
         const startTagMatch = parseStartTag()
         if (startTagMatch) {
           handleStartTag(startTagMatch)
@@ -140,8 +149,11 @@ export function parseHTML (html, options) {
       }
 
       let text, rest, next
+      // 这里的条件是在<ul><li>123312</li></ul>
+      /**这里的123321就是textEnd大于0 */
       if (textEnd >= 0) {
         rest = html.slice(textEnd)
+        // while判断是不是在textEnd中有<文本符号
         while (
           !endTag.test(rest) &&
           !startTagOpen.test(rest) &&
@@ -154,9 +166,10 @@ export function parseHTML (html, options) {
           textEnd += next
           rest = html.slice(textEnd)
         }
+        // 把文本截取出来
         text = html.substring(0, textEnd)
       }
-
+      //
       if (textEnd < 0) {
         text = html
       }
@@ -214,7 +227,7 @@ export function parseHTML (html, options) {
     index += n
     html = html.substring(n)
   }
-  // 匹配开始标签
+  // 匹配开始标签，返回一个match对象
   function parseStartTag () {
     const start = html.match(startTagOpen)
     if (start) {
@@ -236,6 +249,7 @@ export function parseHTML (html, options) {
         match.attrs.push(attr)
       }
       // 匹配到结束标签
+      // unarySlash翻译意思为一元斜杠
       if (end) {
         match.unarySlash = end[1]
         // 前进end[0].length位
@@ -250,7 +264,7 @@ export function parseHTML (html, options) {
   function handleStartTag (match) {
     const tagName = match.tagName
     const unarySlash = match.unarySlash
-
+    // web平台初始化为true
     if (expectHTML) {
       if (lastTag === 'p' && isNonPhrasingTag(tagName)) {
         parseEndTag(lastTag)
@@ -259,13 +273,18 @@ export function parseHTML (html, options) {
         parseEndTag(tagName)
       }
     }
-
+    // 这里的匹配哪些标签可以是自闭和标签,平台操作相关
+    /**
+     * isUnaryTag = makeMap('area,base,br,col,embed,hr,frame,input,link,img....')
+     */
     const unary = isUnaryTag(tagName) || !!unarySlash
 
     const l = match.attrs.length
     const attrs = new Array(l)
+    // 遍历匹配到的attr
     for (let i = 0; i < l; i++) {
       const args = match.attrs[i]
+      // 捕获的分组
       const value = args[3] || args[4] || args[5] || ''
       const shouldDecodeNewlines = tagName === 'a' && args[1] === 'href'
         ? options.shouldDecodeNewlinesForHref
@@ -279,12 +298,12 @@ export function parseHTML (html, options) {
         attrs[i].end = args.end
       }
     }
-
+    // 自闭和标签
     if (!unary) {
       stack.push({ tag: tagName, lowerCasedTag: tagName.toLowerCase(), attrs: attrs, start: match.start, end: match.end })
       lastTag = tagName
     }
-
+    // 生成ast
     if (options.start) {
       options.start(tagName, attrs, unary, match.start, match.end)
     }
@@ -296,6 +315,7 @@ export function parseHTML (html, options) {
     if (end == null) end = index
 
     // Find the closest opened tag of the same type
+    // 通过在stack中保存的标签，这里会用来匹配是不是一一对应
     if (tagName) {
       lowerCasedTagName = tagName.toLowerCase()
       for (pos = stack.length - 1; pos >= 0; pos--) {
@@ -315,6 +335,7 @@ export function parseHTML (html, options) {
           (i > pos || !tagName) &&
           options.warn
         ) {
+          // 如果标签没有写对，比如只有开始标签没有结束标签会出现这个错误
           options.warn(
             `tag <${stack[i].tag}> has no matching end tag.`,
             { start: stack[i].start, end: stack[i].end }
@@ -327,6 +348,7 @@ export function parseHTML (html, options) {
 
       // Remove the open elements from the stack
       stack.length = pos
+      // 更新lasttag
       lastTag = pos && stack[pos - 1].tag
     } else if (lowerCasedTagName === 'br') {
       if (options.start) {
