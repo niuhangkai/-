@@ -18,7 +18,7 @@ type TextParseResult = {
 }
 // 解析文本
 export function parseText (
-  // 文本
+  // 文本{{text}}
   text: string,
   // 分隔符
   delimiters?: [string, string]
@@ -32,6 +32,7 @@ export function parseText (
   const rawTokens = []
   let lastIndex = tagRE.lastIndex = 0
   let match, index, tokenValue
+  // 匹配match为["{{a}}",a]
   while ((match = tagRE.exec(text))) {
     index = match.index
     // push text token
@@ -43,6 +44,7 @@ export function parseText (
     // tag token
     // 过滤器处理
     const exp = parseFilters(match[1].trim())
+    // exp为a
     tokens.push(`_s(${exp})`)
     rawTokens.push({ '@binding': exp })
     lastIndex = index + match[0].length
@@ -53,7 +55,9 @@ export function parseText (
     tokens.push(JSON.stringify(tokenValue))
   }
   return {
+    // 返回 "\"\\n      \"+_s(a)+\"\\n
     expression: tokens.join('+'),
+    //
     tokens: rawTokens
   }
 }

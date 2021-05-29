@@ -475,7 +475,7 @@ export function resolveAsset (
   if (typeof id !== 'string') {
     return
   }
-  // options.components
+  // options.components,拓展在$options.components下
   const assets = options[type]
   // check local registration variations first
   if (hasOwn(assets, id)) return assets[id]

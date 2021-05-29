@@ -1,7 +1,7 @@
 /* @flow */
 
 import { makeMap } from 'shared/util'
-
+// 是否是自闭和标签
 export const isUnaryTag = makeMap(
   'area,base,br,col,embed,frame,hr,img,input,isindex,keygen,' +
   'link,meta,param,source,track,wbr'
@@ -15,6 +15,7 @@ export const canBeLeftOpenTag = makeMap(
 
 // HTML5 tags https://html.spec.whatwg.org/multipage/indices.html#elements-3
 // Phrasing Content https://html.spec.whatwg.org/multipage/dom.html#phrasing-content
+// html5的7类元素，这个方法是指不可以放在p标签中的标签
 export const isNonPhrasingTag = makeMap(
   'address,article,aside,base,blockquote,body,caption,col,colgroup,dd,' +
   'details,dialog,div,dl,dt,fieldset,figcaption,figure,footer,form,' +

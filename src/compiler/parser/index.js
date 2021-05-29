@@ -25,7 +25,7 @@ export const onRE = /^@|^v-on:/
 export const dirRE = process.env.VBIND_PROP_SHORTHAND
   ? /^v-|^@|^:|^\.|^#/
   : /^v-|^@|^:|^#/
-  // 解析v-for的正则, // v-for="item in lists"
+  // 解析v-for的正则, // "item in lists"
 export const forAliasRE = /([\s\S]*?)\s+(?:in|of)\s+([\s\S]*)/
 export const forIteratorRE = /,([^,\}\]]*)(?:,([^,\}\]]*))?$/
 // 去除v-for的括号(item,index)
@@ -59,7 +59,7 @@ let platformMustUseProp
 let platformGetTagNamespace
 let maybeComponent
 
-// 创建ast节点
+// 创建ast节点，匹配到一个标签就创建一个标签的ast
 export function createASTElement (
   // 标签
   tag: string,
@@ -90,7 +90,26 @@ export function createASTElement (
  * Convert HTML string to AST.
  */
 export function parse (
+  // 获取到完整的template
+  /**
+   * <div id="app">{{a}}
+   *    <my-component-a></my-component-a>
+   *    <div v-for="(item,index) in list">
+   *      {{item}}:&lt;{{index}}
+   *    </div>
+   *  </div>
+   */
   template: string,
+  // 编译时候传入的那个options,其__proto__还扩展了一些其他的方法，和finalOptions合并过的
+  // finalOptions：src\platforms\web\compiler\options.js
+  /**
+   * options = {
+   *   comments:'',
+   *   delimiters: (2) ["${", "}"],
+   *   shouldDecodeNewlines: false
+   *   shouldDecodeNewlinesForHref: false
+   * }
+   */
   options: CompilerOptions
 ): ASTElement | void {
   warn = options.warn || baseWarn
@@ -98,15 +117,18 @@ export function parse (
   platformIsPreTag = options.isPreTag || no
   platformMustUseProp = options.mustUseProp || no
   platformGetTagNamespace = options.getTagNamespace || no
+  // 判断是否是html或者svg保留标签
   const isReservedTag = options.isReservedTag || no
   maybeComponent = (el: ASTElement) => !!el.component || !isReservedTag(el.tag)
-
+  /**
+   *
+   */
   transforms = pluckModuleFunction(options.modules, 'transformNode')
   preTransforms = pluckModuleFunction(options.modules, 'preTransformNode')
   postTransforms = pluckModuleFunction(options.modules, 'postTransformNode')
 
   delimiters = options.delimiters
-
+  // 栈数据结构，用来做判断标签是否闭合
   const stack = []
   const preserveWhitespace = options.preserveWhitespace !== false
   const whitespaceOption = options.whitespace
@@ -126,6 +148,7 @@ export function parse (
   function closeElement (element) {
     trimEndingWhitespace(element)
     if (!inVPre && !element.processed) {
+      // 处理当前节点的身上的key，ref，slot等情况
       element = processElement(element, options)
     }
     // tree management
@@ -219,9 +242,20 @@ export function parse (
   }
   // 这里的options可以去baseOptions下查看
   // 对template模板解析，解析过程中调用start，end，chars，comment等这些函数
+  /**
+   * template
+   * <div id="app">{{a}}
+   *    <my-component-a></my-component-a>
+   *    <div v-for="(item,index) in list">
+   *      {{item}}:&lt;{{index}}
+   *    </div>
+   *  </div>
+   */
   parseHTML(template, {
     warn,
+    // true
     expectHTML: options.expectHTML,
+    // 自闭和标签判断
     isUnaryTag: options.isUnaryTag,
     canBeLeftOpenTag: options.canBeLeftOpenTag,
     shouldDecodeNewlines: options.shouldDecodeNewlines,
@@ -231,6 +265,8 @@ export function parse (
     outputSourceRange: options.outputSourceRange,
     // start的作用是创建ast树,ast树是一个js对象，并且通过treeManager做管理,建立父子关系,处理v-for,v-once,v-if等
     // 标签   属性   是否是自闭和标签
+    // 这里是在执行解析到标签时候执行的，handleStartTag方法
+    // ex：div [{name:id,value:app,start:0,end:10}]   false  0  14
     start (tag, attrs, unary, start, end) {
       // check namespace.
       // inherit parent ns if there is one
@@ -243,17 +279,19 @@ export function parse (
         attrs = guardIESVGBug(attrs)
       }
       // 创建ast的元素，返回一个js对象
-      /**
+      /**ex:
        *  {
           // 1是普通元素节点
           type: 1,
+          end:0,
+          start:14,
           // 当前tag标签
-          tag,
+          tag:'div' // 组件的话就是组件的名称ex：comp-a
           // 属性数组
-          attrsList: attrs,
-          // 将attrs转换为一个键值对对象{xxx:xxx,}
-          attrsMap: makeAttrsMap(attrs),
-          rawAttrsMap: {},
+          attrsList: [{name:id.value:app,start:5,end:10}],
+          // 将attrs转换为一个键值对对象{xxx:xxx,}就是匹配到的标签上的属性
+          attrsMap: {id:app},// ex: 或者 v-for:"(item,index) in list"
+          rawAttrsMap: {name:id.value:app,start:5,end:10},
           // ast的父ast节点
           parent,
           // 子ast
@@ -275,6 +313,8 @@ export function parse (
           }, {})
         }
         attrs.forEach(attr => {
+          // 对属性名做一个校验
+          // attr.name  = {name:id,value:app}
           if (invalidAttributeRE.test(attr.name)) {
             warn(
               `Invalid dynamic argument expression: attribute names cannot contain ` +
@@ -287,7 +327,7 @@ export function parse (
           }
         })
       }
-      // 禁止在模板中使用这些元素
+      // 禁止在模板中使用这些元素,
       if (isForbiddenTag(element) && !isServerRendering()) {
         element.forbidden = true
         process.env.NODE_ENV !== 'production' && warn(
@@ -333,6 +373,7 @@ export function parse (
       }
       // 不是自闭和标签，把element赋值给currentParent
       if (!unary) {
+        // 更新currentParent 建立父子关系
         currentParent = element
         stack.push(element)
       } else {
@@ -340,19 +381,29 @@ export function parse (
       }
     },
     // 解析end标签会调用这里
+    // ex:tag可能是div，comp-a等
     end (tag, start, end) {
-      // 获取最后一位，因为解析顺序是一个栈数据结构
+      // 获取最后一位，因为解析顺序是一个栈数据结构，最后一位也就是当前要处理的这个
+      // 1 开始标签
+      //   2 开始标签
+      //     3 开始标签
+      //     3 结束标签  // 当前位置
+      //   2 结束标签
+      // 1 结束标签
       const element = stack[stack.length - 1]
       // pop stack
+      // 最后一位再减1，就是当前的元素的父元素currentParent
       stack.length -= 1
       // 结束的时候重新指向currentParent
       currentParent = stack[stack.length - 1]
       if (process.env.NODE_ENV !== 'production' && options.outputSourceRange) {
         element.end = end
       }
+      // 当前要处理的ast
       closeElement(element)
     },
     // 创建文本ast，处理文本节点。此处在截取html时候，是文本节点会调用这里
+    // ex: text={{text}},start:14 end:33
     chars (text: string, start: number, end: number) {
       if (!currentParent) {
         if (process.env.NODE_ENV !== 'production') {
@@ -411,8 +462,10 @@ export function parse (
           // 表达式的ast
           child = {
             type: 2,
+            //  {{a}}被处理为"\"\\n      \"+_s(a)+\"\\n
             expression: res.expression,
             tokens: res.tokens,
+            // "\n {{a}}\n
             text
           }
         } else if (text !== ' ' || !children.length || children[children.length - 1].text !== ' ') {
@@ -543,11 +596,19 @@ function processRef (el) {
 export function processFor (el: ASTElement) {
   let exp
   // 获取到v-for对应的表达式
+  // ex:(item,index) in list
   if ((exp = getAndRemoveAttr(el, 'v-for'))) {
     // 解析v-for的值，返回res对象。里面包含了遍历的值都是什么
+    /**
+    * 返回:res = {
+    *   alias: "item"
+        for: "list"
+        iterator1: "index"
+    * }
+    */
     const res = parseFor(exp)
     if (res) {
-      // 将res拓展到el上面
+      // 将res拓展到ast树上面
       extend(el, res)
     } else if (process.env.NODE_ENV !== 'production') {
       warn(
@@ -566,27 +627,37 @@ type ForParseResult = {
 };
 // 解析v-for的值，返回res
 export function parseFor (exp: string): ?ForParseResult {
-  // v-for="item in lists"
+  // ex：exp为  "(item,index) in lists"
+  // 解析到inMatch为 inMatch = (3) ["(item,index) in list", "(item,index)", "list", index: 0, input: "(item,index) in list", xxx]
   const inMatch = exp.match(forAliasRE)
   // 没有匹配到
   if (!inMatch) return
   const res = {}
-  // 获取到遍历的data或者lists
-  // '5141'.match(/5(1)(4)/)
-  // ["514", "1", "4", index: 0, input: "5141", groups: undefined]
+  // 获取到遍历的data或者lists，inMatch[2] = "list"
   res.for = inMatch[2].trim()
-  // 去除(item,index)的括号，inMatch[1]是第一组
+  // 去除(item,index)的括号，inMatch[1]是第一组，处理完成为 "item,index"
   const alias = inMatch[1].trim().replace(stripParensRE, '')
+  // 匹配到 ,index
   const iteratorMatch = alias.match(forIteratorRE)
   if (iteratorMatch) {
+    // 匹配到结果为 item 赋值给res.alias
     res.alias = alias.replace(forIteratorRE, '').trim()
+    // 匹配到结果为index 赋值给res.iterator1
     res.iterator1 = iteratorMatch[1].trim()
+    // 这里是遍历对象的第三个参数，可以有也可以没
     if (iteratorMatch[2]) {
       res.iterator2 = iteratorMatch[2].trim()
     }
   } else {
     res.alias = alias
   }
+  /**
+   * 返回:res = {
+   * alias: "item"
+      for: "list"
+      iterator1: "index"
+   * }
+   */
   return res
 }
 // 处理v-if

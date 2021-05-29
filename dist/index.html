@@ -8,104 +8,36 @@
   </head>
   <body>
     <div id="app">
-      <div v-for="item in a">{{item}}</div>
-      <button @click="p"></button>
+      <!-- <my-component-a></my-component-a> -->
+      <div v-for="(item,index) in list" v-if="index > 2">
+        {{item}}:<{{index}}
+      </div>
     </div>
   </body>
   <script src="./vue.js"></script>
   <script>
-    new Vue({
-      el: "#app",
-      data: {
-        a: [1, 2, 3],
-      },
-      methods: {
-        p() {
-          debugger;
-          this.a.push(4);
-        },
-      },
-    })(
-      // 初始的render函数
-      function anonymous() {
-        with (this) {
-          return _c(
-            "div",
-            {
-              attrs: {
-                id: "app",
-              },
-            },
-            [
-              _l(a, function (item) {
-                return _c("div", [_v("\n        " + _s(item) + "\n      ")]);
-              }),
-              _v(" "),
-              _c("button", {
-                on: {
-                  click: p,
-                },
-              }),
-            ],
-            2
-          );
+    let compA = {
+      template:'<div>{{name}}</div>',
+      data() {
+        return {
+          name:'dataA'
         }
       }
-    );
-
-    //  let comA = {
-    //     template:'<div>123123132</div>',
-    //     created:[function(){}]
-    //     // created(){
-    //     //   console.log('childrenA')
-    //     // }
-    //   }
-    // let comB = {
-    //   template:'<div>666666666</div>',
-    //   created(){
-    //     console.log('childrenB')
-    //   }
-    // }
-    // Vue.mixin({
-    //   data() {
-    //     return {
-    //       a:1
-    //     }
-    //   },
-    //   created: []
-    // })
-    // var ComponentA = {
-    //   name: 'ComponentA',
-    //   data(){
-    //     return {
-    //       a:1111111
-    //     }
-    //   },
-    //   template: '<div>{{a}}</div>'
-    // //  render:function (createElement) {
-    // //   return createElement('div',{attrs:{id:'app22222'}},['wangwnagwnag1'])
-    // //  }
-    // }
-    // new Vue({
-    //   el:'#app',
-    //   data(){
-    //     return {
-    //       a:1,
-    //     }
-    //   },
-    //   components:{
-    //     'my-component-a': ComponentA
-    //   },
-    //   render:h => h(ComponentA)
-    // //   render: function (createElement) {
-    // //   var self = this
-    // //   return createElement('my-component-a')
-    // //   // return createElement('div',{attrs:{id:'app'}},[
-    // //   // 'test',
-    // //   //   createElement('h1', ['一则头条1',createElement(ComponentA)]),
-    // //   //   createElement('h1', '一则头条3'),
-    // //   // ])
-    // // }
-    // })
+    }
+    new Vue({
+      el: '#app',
+      data() {
+        return {
+          a:1,
+          list:[1,2,3,4,5,6,7,8,9]
+        }
+      },
+      components:{
+        "my-component-a":compA
+      },
+      created () {
+        console.log('current Vue instance')
+      }
+    })
   </script>
 </html>

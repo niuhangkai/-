@@ -65,6 +65,13 @@ export function createCompileToFunctionFn (compile: Function): Function {
 
     // check cache
     // 缓存当前的template，因为编译比较耗时，delimiters是用户自定义的分隔符
+    /**
+     * 假设分隔符为
+     * new Vue({
+        delimiters: ['${', '}']
+      })
+      那么，拼接起来的template为 "${,}<div id="app"></div>"
+     */
     const key = options.delimiters
       ? String(options.delimiters) + template
       : template

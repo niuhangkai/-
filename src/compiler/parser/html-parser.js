@@ -32,7 +32,7 @@ const doctype = /^<!DOCTYPE [^>]+>/i
 // 注释节点
 const comment = /^<!\--/
 // 条件注释
-// <!--[if IE 6]>
+// <![if IE 6]>
 const conditionalComment = /^<!\[/
 
 // Special Elements (can contain anything)
@@ -60,7 +60,18 @@ function decodeAttr (value, shouldDecodeNewlines) {
   return value.replace(re, match => decodingMap[match])
 }
 // 解析html，基于simple-html-parser做的，标签相当于一个栈数据结构
+// html就是包含#app的html
 export function parseHTML (html, options) {
+  // 保留匹配到的标签和属性
+  /**
+   * [{
+      end: 14
+      lowerCasedTag: "div"
+      start: 0
+      tag: "div",
+      attrs:[{name:"id",value:"app",start:0,end:13}]
+    }]
+   */
   const stack = []
   // 这里初始化为true
   const expectHTML = options.expectHTML
@@ -74,14 +85,15 @@ export function parseHTML (html, options) {
   while (html) {
     last = html
     // Make sure we're not in a plaintext content element like script/style
-    //            判断lastTag是不是scr ipt,style,textarea
+    //            判断lastTag是不是script,style,textarea
     if (!lastTag || !isPlainTextElement(lastTag)) {
-      // 判断是不是<
+      // 不断的截取以<开头的字符串
       let textEnd = html.indexOf('<')
-      // 如果是<并且为0，就是在第一个位置
+      // 如果是<并且为0，就是在第一个位置,有可能是开头,也有可能是中间部分的标签,因为会通过advance方法前进
       if (textEnd === 0) {
         // Comment:
         // 判断是不是注释节点，comment上面定义了正则
+        // 匹配开头是不是<!--
         if (comment.test(html)) {
           // 找到结束位置
           const commentEnd = html.indexOf('-->')
@@ -99,6 +111,7 @@ export function parseHTML (html, options) {
 
         // http://en.wikipedia.org/wiki/Conditional_comment#Downlevel-revealed_conditional_comment
         // 如果是条件注释
+        // <![if IE 6]>
         if (conditionalComment.test(html)) {
           // 找到结尾注释
           const conditionalEnd = html.indexOf(']>')
@@ -120,26 +133,32 @@ export function parseHTML (html, options) {
 
         // End tag:
         // 结束标签的匹配
+        // </div>或者</comp-a>这种
         const endTagMatch = html.match(endTag)
         if (endTagMatch) {
           const curIndex = index
           // 前进匹配到的标签length位数
           advance(endTagMatch[0].length)
+          // endTagMatch为comp-a        49        66
           parseEndTag(endTagMatch[1], curIndex, index)
           continue
         }
 
         // Start tag:
         // 开始标签的匹配，如果匹配到，会返回一个match对象
-        /**
-         * match = {
-         *      tagName: start[1],
-                attrs: [],
-                start: index
-         * }
-         */
+        /**ex:
+          const match = {
+            attrs: ["id=app","id","=","app"]
+            end: 14
+            start: 0
+            tagName: "div"
+            unarySlash: ""
+        */
+        //  <div id="app">
         const startTagMatch = parseStartTag()
         if (startTagMatch) {
+          // 将匹配到的attrs数组格式化为[{name:"id",value:"app",start:0,end:13}]
+          // 并且调用options.start生成ast
           handleStartTag(startTagMatch)
           if (shouldIgnoreFirstNewline(startTagMatch.tagName, html)) {
             advance(1)
@@ -147,11 +166,15 @@ export function parseHTML (html, options) {
           continue
         }
       }
-
+      // 如果textEnd不是0，，说明需要处理剩下的html
       let text, rest, next
-      // 这里的条件是在<ul><li>123312</li></ul>
-      /**这里的123321就是textEnd大于0 */
+
       if (textEnd >= 0) {
+        // 从当前的html截取到下一个<开头的地方作为rest
+        /**
+         * {{a}} <comp-a></comp-a>
+         * 这里的rest就是<comp-a></comp-a>，至于{{a}}在下面会额外截取出来
+         */
         rest = html.slice(textEnd)
         // while判断是不是在textEnd中有<文本符号
         while (
@@ -167,17 +190,21 @@ export function parseHTML (html, options) {
           rest = html.slice(textEnd)
         }
         // 把文本截取出来
+        /**
+         * html:{{a}} <comp-a></comp-a>
+         * 截取之后: {{a}}
+         */
         text = html.substring(0, textEnd)
       }
       //
       if (textEnd < 0) {
         text = html
       }
-
+      // 前进到下一个位置
       if (text) {
         advance(text.length)
       }
-
+      // 文本节点
       if (options.chars && text) {
         options.chars(text, index - text.length, index)
       }
@@ -204,7 +231,7 @@ export function parseHTML (html, options) {
       html = rest
       parseEndTag(stackedTag, index - endTagLength, index)
     }
-
+    // 判断这两个剩余的template是否相等
     if (html === last) {
       options.chars && options.chars(html)
       if (process.env.NODE_ENV !== 'production' && !stack.length && options.warn) {
@@ -229,18 +256,24 @@ export function parseHTML (html, options) {
   }
   // 匹配开始标签，返回一个match对象
   function parseStartTag () {
+    // 如果是刚开始时候
+    // start为["<div", "div", index: 0, input:xxx]
     const start = html.match(startTagOpen)
     if (start) {
       const match = {
+        // 标签名称 div
         tagName: start[1],
         // 保留属性
+        /**
+         * ["id=app","id","=","app"]
+         */
         attrs: [],
         start: index
       }
-      // 匹配到标签然后前进
+      // 匹配到标签然后前进，第一次为start[0]为<div，通过advance方法，截取掉<div,将剩下的作为新的html
       advance(start[0].length)
       let end, attr
-      // 匹配attr属性，比如:class="xxx" class="xxx" v-if="xxx"
+      //或者匹配到>标签     匹配attr属性，比如:class="xxx" class="xxx" v-if="xxx"
       while (!(end = html.match(startTagClose)) && (attr = html.match(dynamicArgAttribute) || html.match(attribute))) {
         attr.start = index
         // 每次匹配到就前进attr[0].length位
@@ -260,11 +293,14 @@ export function parseHTML (html, options) {
       }
     }
   }
-
+  // 作用是将标签上的属性解析出来
+  // 刚解析出来的标签上的属性为["id="app"", "id", "=", "app", undefined, undefined]
+  // 通过这个方法格式化为{name:"id",value:"app",start:0,end:13}，并且调用options.start生成ast
   function handleStartTag (match) {
     const tagName = match.tagName
     const unarySlash = match.unarySlash
     // web平台初始化为true
+    // html5中的7大类和内容模型处理，有些元素不可以放在p标签中，这里做判断，放在p标签中，也会被单独提取出来，不会嵌套
     if (expectHTML) {
       if (lastTag === 'p' && isNonPhrasingTag(tagName)) {
         parseEndTag(lastTag)
@@ -281,7 +317,8 @@ export function parseHTML (html, options) {
 
     const l = match.attrs.length
     const attrs = new Array(l)
-    // 遍历匹配到的attr
+    // 遍历匹配到的某一段标签的attr
+    // ["id="app"", "id", "=", "app", undefined, undefined]
     for (let i = 0; i < l; i++) {
       const args = match.attrs[i]
       // 捕获的分组
@@ -305,10 +342,11 @@ export function parseHTML (html, options) {
     }
     // 生成ast
     if (options.start) {
+      // ex：div [{name:id,value:app,start:0,end:10}]   false  0  14
       options.start(tagName, attrs, unary, match.start, match.end)
     }
   }
-
+  //解析结束时候的标签</com-a>或者</div> 这里的参数假设为: comp-a    49    66
   function parseEndTag (tagName, start, end) {
     let pos, lowerCasedTagName
     if (start == null) start = index
@@ -317,7 +355,9 @@ export function parseHTML (html, options) {
     // Find the closest opened tag of the same type
     // 通过在stack中保存的标签，这里会用来匹配是不是一一对应
     if (tagName) {
+      // 传入的标签名
       lowerCasedTagName = tagName.toLowerCase()
+      // 倒序判断当前的标签，因为解析到开始标签会加入到stack，是按照栈数据结构添加的，匹配到第一个结束标签，一定是和stack最后一个一一对应
       for (pos = stack.length - 1; pos >= 0; pos--) {
         if (stack[pos].lowerCasedTag === lowerCasedTagName) {
           break
@@ -341,20 +381,26 @@ export function parseHTML (html, options) {
             { start: stack[i].start, end: stack[i].end }
           )
         }
+        // 匹配到结束标签，调用end
         if (options.end) {
+          // 假设参数为，comp-a     59     66
           options.end(stack[i].tag, start, end)
         }
       }
 
       // Remove the open elements from the stack
+      // 从stack中删除元素
       stack.length = pos
       // 更新lasttag
       lastTag = pos && stack[pos - 1].tag
     } else if (lowerCasedTagName === 'br') {
+      // 对边界情况做处理，闭合标签
       if (options.start) {
+        // 这里的true表示为自闭和标签
         options.start(tagName, [], true, start, end)
       }
     } else if (lowerCasedTagName === 'p') {
+      // 对边界情况做处理，闭合标签，html5的7大类内容模型情况处理，p标签包含了不能包含的标签，手动闭合
       if (options.start) {
         options.start(tagName, [], false, start, end)
       }

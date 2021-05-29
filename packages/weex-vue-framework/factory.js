@@ -7767,6 +7767,9 @@ var isReservedTag$1 = makeMap(
 
 // Elements that you can, intentionally, leave open (and which close themselves)
 // more flexible than web
+// 可以不需要闭合的标签
+// <li>
+//
 var canBeLeftOpenTag = makeMap(
   'web,spinner,switch,video,textarea,canvas,' +
   'indicator,marquee,countdown',
