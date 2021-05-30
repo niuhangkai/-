@@ -9,9 +9,24 @@
   <body>
     <div id="app">
       <!-- <my-component-a></my-component-a> -->
-      <div v-for="(item,index) in list" v-if="index > 2">
+      <div v-if="a === 2" class="test" :class="{background:a===1 ? 'blue':'red'}">
+          vIf
+      </div>
+      <div v-else>
+        465
+      </div>
+      <!-- <div v-for="(item,index) in list" v-if="index > 2">
         {{item}}:<{{index}}
       </div>
+      <div v-show="a === 1">
+        vShow
+      </div>
+      <div v-show="a !== 1">
+        vShow!==
+      </div>
+      <div>
+        <p>123</p>
+      </div> -->
     </div>
   </body>
   <script src="./vue.js"></script>

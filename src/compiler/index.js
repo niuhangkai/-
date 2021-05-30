@@ -27,19 +27,31 @@ export const createCompiler = createCompilerCreator(function baseCompile (
    * ast：抽象语法树，babel，eslint，prettier都是通过ast实现的
    * {
    * attrList:[]
-   * attrsMap:{:class:'xxx',v-if:"isShow"}
-   * children:[{子ast }],
+   * attrsMap:{id:app}
+   * children:[{
+   *    alias: "item"
+        attrsList: []
+        attrsMap: {v-for: "(item,index) in list", v-if: "index > 2"}
+        children: [{…}]
+        end: 165
+        for: "list"
+        if: "index > 2",
+        ifConditions:[{xxx}]
+      }],
    * if:"isShow",
    * classBinding:"bindCls",
    * parent:undefined
    * tag:"ul",
-   * ifConditions:[{}]
+   * ifConditions:[{xxx}]
    * }
    */
   const ast = parse(template.trim(), options)
   if (options.optimize !== false) {
+    // 优化ast，主要是对纯静态节点的标记
     optimize(ast, options)
   }
+  // 生成代码，将ast转换为代码字符串
+  // 第一个参数是优化好的纯静态节点的标记ast
   const code = generate(ast, options)
   return {
     ast,

@@ -279,7 +279,7 @@ export function parse (
         attrs = guardIESVGBug(attrs)
       }
       // 创建ast的元素，返回一个js对象
-      /**ex:
+      /**eg:
        *  {
           // 1是普通元素节点
           type: 1,
@@ -290,7 +290,7 @@ export function parse (
           // 属性数组
           attrsList: [{name:id.value:app,start:5,end:10}],
           // 将attrs转换为一个键值对对象{xxx:xxx,}就是匹配到的标签上的属性
-          attrsMap: {id:app},// ex: 或者 v-for:"(item,index) in list"
+          attrsMap: {id:app},// eg: 或者 v-for:"(item,index) in list"
           rawAttrsMap: {name:id.value:app,start:5,end:10},
           // ast的父ast节点
           parent,
@@ -373,7 +373,7 @@ export function parse (
       }
       // 不是自闭和标签，把element赋值给currentParent
       if (!unary) {
-        // 更新currentParent 建立父子关系
+        // 更新currentParent
         currentParent = element
         stack.push(element)
       } else {
@@ -381,7 +381,7 @@ export function parse (
       }
     },
     // 解析end标签会调用这里
-    // ex:tag可能是div，comp-a等
+    // eg:tag可能是div，comp-a等
     end (tag, start, end) {
       // 获取最后一位，因为解析顺序是一个栈数据结构，最后一位也就是当前要处理的这个
       // 1 开始标签
@@ -403,7 +403,7 @@ export function parse (
       closeElement(element)
     },
     // 创建文本ast，处理文本节点。此处在截取html时候，是文本节点会调用这里
-    // ex: text={{text}},start:14 end:33
+    // eg: text={{text}},start:14 end:33
     chars (text: string, start: number, end: number) {
       if (!currentParent) {
         if (process.env.NODE_ENV !== 'production') {
@@ -458,6 +458,7 @@ export function parse (
         let res
         let child: ?ASTNode
         // 解析文本节点
+        // 2是表达式节点
         if (!inVPre && text !== ' ' && (res = parseText(text, delimiters))) {
           // 表达式的ast
           child = {
@@ -469,7 +470,7 @@ export function parse (
             text
           }
         } else if (text !== ' ' || !children.length || children[children.length - 1].text !== ' ') {
-          // 纯文本节点
+          // 3是纯文本节点
           child = {
             type: 3,
             text
@@ -537,6 +538,7 @@ export function processElement (
   element: ASTElement,
   options: CompilerOptions
 ) {
+  //
   processKey(element)
 
   // determine whether this is a plain element after
@@ -596,7 +598,7 @@ function processRef (el) {
 export function processFor (el: ASTElement) {
   let exp
   // 获取到v-for对应的表达式
-  // ex:(item,index) in list
+  // eg:(item,index) in list
   if ((exp = getAndRemoveAttr(el, 'v-for'))) {
     // 解析v-for的值，返回res对象。里面包含了遍历的值都是什么
     /**

@@ -40,18 +40,24 @@ export type CodegenResult = {
   staticRenderFns: Array<string>
 };
 
+// 生成代码的入口函数
+// ast是优化好的ast
 export function generate (
   ast: ASTElement | void,
   options: CompilerOptions
 ): CodegenResult {
+  // 定义了一些列的辅助函数
   const state = new CodegenState(options)
+  // 存在ast执行genElement，否则执行_c("div")，创建一个div
   const code = ast ? genElement(ast, state) : '_c("div")'
   return {
+    // 将生产好的code拼接
     render: `with(this){return ${code}}`,
+    // 标记过的静态节点会放盗staticRenderFns中
     staticRenderFns: state.staticRenderFns
   }
 }
-
+// 生成code
 export function genElement (el: ASTElement, state: CodegenState): string {
   if (el.parent) {
     el.pre = el.pre || el.parent.pre
@@ -62,8 +68,10 @@ export function genElement (el: ASTElement, state: CodegenState): string {
   } else if (el.once && !el.onceProcessed) {
     return genOnce(el, state)
   } else if (el.for && !el.forProcessed) {
+    // 这里的解析for和if时候，for的优先级在前面
     return genFor(el, state)
   } else if (el.if && !el.ifProcessed) {
+    // 存在if的表达式并且没有被ifProcessed标记
     return genIf(el, state)
   } else if (el.tag === 'template' && !el.slotTarget && !state.pre) {
     return genChildren(el, state) || 'void 0'
@@ -71,6 +79,7 @@ export function genElement (el: ASTElement, state: CodegenState): string {
     return genSlot(el, state)
   } else {
     // component or element
+    // 创建节点
     let code
     if (el.component) {
       code = genComponent(el.component, el, state)
@@ -81,6 +90,7 @@ export function genElement (el: ASTElement, state: CodegenState): string {
       }
 
       const children = el.inlineTemplate ? null : genChildren(el, state, true)
+      // 根据ast调用vm._c创建vnode
       code = `_c('${el.tag}'${
         data ? `,${data}` : '' // data
       }${
@@ -141,17 +151,19 @@ function genOnce (el: ASTElement, state: CodegenState): string {
     return genStatic(el, state)
   }
 }
-
+// v-if的代码生成
 export function genIf (
   el: any,
   state: CodegenState,
   altGen?: Function,
   altEmpty?: string
 ): string {
+  // 避免递归
   el.ifProcessed = true // avoid recursion
   return genIfConditions(el.ifConditions.slice(), state, altGen, altEmpty)
 }
 
+// v-if的代码生成
 function genIfConditions (
   conditions: ASTIfConditions,
   state: CodegenState,
@@ -159,10 +171,13 @@ function genIfConditions (
   altEmpty?: string
 ): string {
   if (!conditions.length) {
+    // conditions不存在了创建空文本节点
     return altEmpty || '_e()'
   }
-
+  // 将conditions数组中第一个截取出来
   const condition = conditions.shift()
+  // 判断是否存在条件判断的表达式
+  // eg:a === 2
   if (condition.exp) {
     return `(${condition.exp})?${
       genTernaryExp(condition.block)
@@ -194,6 +209,7 @@ export function genFor (
   const iterator1 = el.iterator1 ? `,${el.iterator1}` : ''
   const iterator2 = el.iterator2 ? `,${el.iterator2}` : ''
 
+  // 对组件在v-for时候做一个判断，必须需要key
   if (process.env.NODE_ENV !== 'production' &&
     state.maybeComponent(el) &&
     el.tag !== 'slot' &&
@@ -208,8 +224,9 @@ export function genFor (
       true /* tip */
     )
   }
-
+  // 标记已经处理过了
   el.forProcessed = true // avoid recursion
+  // 返回_l函数，renderlist，生成vnode
   return `${altHelper || '_l'}((${exp}),` +
     `function(${alias}${iterator1}${iterator2}){` +
       `return ${(altGen || genElement)(el, state)}` +

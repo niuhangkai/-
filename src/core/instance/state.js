@@ -193,20 +193,6 @@ const computedWatcherOptions = { lazy: true };
  最后给到Object.defineProperty做代理，当我们访问this.xxx或者render函数里面时候，就会触发sharedPropertyDefinition的get函数，也就是computedGetter。
  4.get函数，就是computedGetter，通过watcher.evaluate()触发求值。
  */
-/**
- *
- * 1.输入url，根据输入内容如果是地址，拼装协议合称完整的url，如果是内容使用默认使用默认搜索引擎，合称带搜索关键字的url（浏览器主进程）
- * 2.浏览器进程通过IPC（进程间通信）把url请求发送给网络进程（浏览器主进程）
- * 3.网络进程收到url检查本地是否缓存，有的话返回给浏览器进程（强制缓存和协商缓存以及浏览器缓存策略，启发式缓存）
- * 4.DNS解析，顺序-检查浏览器是否缓存DNS记录，本机电脑缓存，host文件缓存，路由器缓存，ISP商的DNS缓存，，DNS递归查询（本地DNS服务器-权限DNS服务器-顶级DNS服务器，13台根DNS服务器）
- * 5.等待TCP队列，浏览器为每个域名最多维护6个TCP连接（现代浏览器），否则就会处于排队队列，http2无此限制
- * 6.建立TCP连接（三次握手建立连接，四次挥手过程）
- * 发送端首先发送一个带SYN标志的数据包给对方（TCP首部SYN为1，表示建立连接，序号Seq为x，x为字节序号），接收端接收到后，回传一个带有SYN/ACK标志的数据包以确认传达确认信息（SYN为1，ACK为1），
- * 最后，发送端在回传一个ACK标志的数据包（ACK为1），代表握手结束，三次挥手原因是避免服务器资源浪费
- *7.构建http请求发送，服务端开始处理，处理好返回给客户端
- 8.请求结束，通用首部字段Conection不是Keep-Alive时，即不为TCP长连接时，通过四次挥手断开TCP连接：
- 9.准备渲染进程，检查url是否打开了之前根域名相同的渲染进程，相同复用进程，不相同开启新的渲染进程
- */
 function initComputed(vm: Component, computed: Object) {
   // $flow-disable-line
   // 声明一个空对象
@@ -325,7 +311,7 @@ function createComputedGetter(key) {
           Dep.target = targetStack[targetStack.length - 1]
         }
        */
-      // 这里的左右是在访问data中定义的属性时候，可以和计算属性双向搜集依赖
+      // 这里是在访问data中定义的属性时候，可以和计算属性双向搜集依赖
       // 把 dep.Target 重置为渲染 watcher。Dep.target存在继续执行
       if (Dep.target) {
         watcher.depend();

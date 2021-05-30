@@ -45,6 +45,7 @@ export function parseText (
     // 过滤器处理
     const exp = parseFilters(match[1].trim())
     // exp为a
+    // _s是通过表达式拼接，_s对应的函数是target._s = toString
     tokens.push(`_s(${exp})`)
     rawTokens.push({ '@binding': exp })
     lastIndex = index + match[0].length

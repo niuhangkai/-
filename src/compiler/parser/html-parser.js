@@ -146,7 +146,7 @@ export function parseHTML (html, options) {
 
         // Start tag:
         // 开始标签的匹配，如果匹配到，会返回一个match对象
-        /**ex:
+        /**eg:
           const match = {
             attrs: ["id=app","id","=","app"]
             end: 14

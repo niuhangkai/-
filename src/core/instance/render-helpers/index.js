@@ -11,11 +11,13 @@ import { renderStatic, markOnce } from './render-static'
 import { bindObjectListeners } from './bind-object-listeners'
 import { resolveScopedSlots } from './resolve-scoped-slots'
 import { bindDynamicKeys, prependModifier } from './bind-dynamic-keys'
-
+// 这里的是render函数中，所有函数的简写
 export function installRenderHelpers (target: any) {
   target._o = markOnce
+  // 转换为数字parseFloat
   target._n = toNumber
   target._s = toString
+  // v-for渲染列表的
   target._l = renderList
   target._t = renderSlot
   target._q = looseEqual
@@ -25,6 +27,7 @@ export function installRenderHelpers (target: any) {
   target._k = checkKeyCodes
   target._b = bindObjectProps
   target._v = createTextVNode
+  // 创建空文本节点
   target._e = createEmptyVNode
   target._u = resolveScopedSlots
   target._g = bindObjectListeners
