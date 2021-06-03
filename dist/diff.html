@@ -7,9 +7,7 @@
     <title>Document</title>
   </head>
   <body><div id="app">
-    <!-- <my-component-a></my-component-a> -->
     <div v-for="item in list" :key="item">{{item}}</div>
-    <div @click="reverseFn">reverse</div>
   </div>
 </body>
   <script src="./vue.js"></script>
@@ -35,10 +33,15 @@
       created () {
         console.log('current Vue instance')
       },
+      mounted() {
+        setTimeout(() => {
+          this.list = [3,4]
+        },1000)
+      },
       methods: {
         reverseFn() {
-          this.list.reverse()
-          // this.list = [3,4,5,6]
+          // this.list.reverse()
+
         }
       }
     })

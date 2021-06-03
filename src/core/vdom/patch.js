@@ -65,7 +65,7 @@ function sameInputType(a, b) {
   const typeB = isDef((i = b.data)) && isDef((i = i.attrs)) && i.type;
   return typeA === typeB || (isTextInputType(typeA) && isTextInputType(typeB));
 }
-
+// 根据老节点上的key值创建一个对象
 function createKeyToOldIdx(children, beginIdx, endIdx) {
   let i, key;
   const map = {};
@@ -594,6 +594,7 @@ export function createPatchFunction(backend) {
         oldStartVnode = oldCh[++oldStartIdx];
         newStartVnode = newCh[++newStartIdx];
       } else if (sameVnode(oldEndVnode, newEndVnode)) {
+        // 新老节点尾一样
         patchVnode(
           oldEndVnode,
           newEndVnode,
@@ -605,6 +606,7 @@ export function createPatchFunction(backend) {
         newEndVnode = newCh[--newEndIdx];
       } else if (sameVnode(oldStartVnode, newEndVnode)) {
         // Vnode moved right
+        // 老的头和新的尾部一样，将老的尾部插入到新的最后
         patchVnode(
           oldStartVnode,
           newEndVnode,
@@ -622,6 +624,7 @@ export function createPatchFunction(backend) {
         newEndVnode = newCh[--newEndIdx];
       } else if (sameVnode(oldEndVnode, newStartVnode)) {
         // Vnode moved left
+        // 老的尾和新的头部一样，将老的尾移动到新的头部
         patchVnode(
           oldEndVnode,
           newStartVnode,
@@ -634,11 +637,22 @@ export function createPatchFunction(backend) {
         oldEndVnode = oldCh[--oldEndIdx];
         newStartVnode = newCh[++newStartIdx];
       } else {
+        // 以上几种情况都不是的话
         if (isUndef(oldKeyToIdx))
+        // 根据老节点上的key值创建一个对象
+        /**
+         *oldKeyToIdx = {
+          //  key是节点上的key，后面的value是节点索引
+           1:0,,
+           2:1
+          }
+         */
           oldKeyToIdx = createKeyToOldIdx(oldCh, oldStartIdx, oldEndIdx);
+          // 是否定义了新开始节点的key，有的话去oldKeyToIdx这个对象中寻找
         idxInOld = isDef(newStartVnode.key)
           ? oldKeyToIdx[newStartVnode.key]
           : findIdxInOld(newStartVnode, oldCh, oldStartIdx, oldEndIdx);
+          // 没有从当前的oldKeyToIdx这个对象中找到，vue认为是一个新元素，创建新元素
         if (isUndef(idxInOld)) {
           // New element
           createElm(

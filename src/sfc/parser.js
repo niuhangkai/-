@@ -10,6 +10,9 @@ const isSpecialTag = makeMap('script,style,template', true)
 /**
  *
  * 新的二进制格式:HTTP2.0解析采用二级制格式，HTTP1.x是解析文本
+ * 多路复用
+ * 头部压缩
+ * 服务端推送
  *
  *
  *
