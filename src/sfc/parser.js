@@ -7,6 +7,13 @@ import { makeMap } from 'shared/util'
 const splitRE = /\r?\n/g
 const replaceRE = /./g
 const isSpecialTag = makeMap('script,style,template', true)
+/**
+ *
+ * 新的二进制格式:HTTP2.0解析采用二级制格式，HTTP1.x是解析文本
+ *
+ *
+ *
+*/
 
 /**
  * Parse a single-file component (*.vue) file into an SFC Descriptor Object.

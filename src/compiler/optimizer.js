@@ -32,6 +32,7 @@ export function optimize (root: ?ASTElement, options: CompilerOptions) {
    *   children:[{tag:'div',static:true},{tag:'li',static:false}]
    * static:false
    * }]
+   *
    */
   markStatic(root)
   // second pass: mark static roots.

@@ -18,6 +18,15 @@ import { createCompilerCreator } from './create-compiler'
  * 2.优化ast
  * 3.将ast转换为代码
  *   */
+/**
+ *
+ * 1.新的二进制格式，
+ *
+ *
+ *
+ *
+ *
+ */
 export const createCompiler = createCompilerCreator(function baseCompile (
   template: string,
   options: CompilerOptions

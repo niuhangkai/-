@@ -180,7 +180,9 @@ export function createPatchFunction(backend) {
     // 获取vnode中的data
     /**
      * data:{
-     * attrs:{id: 'xxx'}}
+     * attrs:{id: 'xxx'},
+     * },
+     * on:{click:f()}
      */
     const data = vnode.data;
     // 获取vnode中的data，就是新增的子节点
@@ -244,6 +246,7 @@ export function createPatchFunction(backend) {
         // 那就循环遍历调用createElm方法，把当前的vnode.elm作为父节点传入
         // 先执行的createChildren，所以子节点的insert会先执行
         createChildren(vnode, children, insertedVnodeQueue);
+
         if (isDef(data)) {
           invokeCreateHooks(vnode, insertedVnodeQueue);
         }
@@ -406,6 +409,7 @@ export function createPatchFunction(backend) {
   }
 
   function invokeCreateHooks(vnode, insertedVnodeQueue) {
+
     for (let i = 0; i < cbs.create.length; ++i) {
       cbs.create[i](emptyNode, vnode);
     }
@@ -575,6 +579,7 @@ export function createPatchFunction(backend) {
     }
     // 老节点开始位置索引小于等于老节点结束位置索引（oldStartIdx <= oldEndIdx）
     // 新节点开始位置索引小于等于新节点结束位置索引（newStartIdx <= newEndIdx）
+    // 只要不满足以上两种情况，就代表当前其中有已经把新的或者旧的节点遍历完了
     // 通过sameVnode方法对比是否相等可以复用
     while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
       if (isUndef(oldStartVnode)) {
@@ -1011,6 +1016,7 @@ export function createPatchFunction(backend) {
   return function patch(oldVnode, vnode, hydrating, removeOnly) {
     // 判断是不是等于null或者undefined
     // 删除时候的逻辑
+    //
     if (isUndef(vnode)) {
       // 判断不为null或者undefined
       if (isDef(oldVnode)) invokeDestroyHook(oldVnode);
