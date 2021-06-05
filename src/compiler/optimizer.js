@@ -90,6 +90,7 @@ function markStatic (node: ASTNode) {
 
 // isInFor是表示当前节点是不是在v-for的指令里面，根节点为false
 // 作用就是标记当前ast以及其子元素是不是一个staticRoot
+// 如果其子节点全是静态的，那么根节点会标记一个staticroot为true，否则就是false
 function markStaticRoots (node: ASTNode, isInFor: boolean) {
   // 对当前是元素节点时候
   if (node.type === 1) {

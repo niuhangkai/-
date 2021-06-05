@@ -67,13 +67,19 @@ function prependModifierMarker (symbol: string, name: string, dynamic?: boolean)
 }
 
 export function addHandler (
+  // 当前节点
   el: ASTElement,
+  // eg:click
   name: string,
+  // eg：handleChange
   value: string,
+  // 修饰符，{stop:true,native:true}
   modifiers: ?ASTModifiers,
+  // false
   important?: boolean,
   warn?: ?Function,
   range?: Range,
+  // false
   dynamic?: boolean
 ) {
   modifiers = modifiers || emptyObject
@@ -93,6 +99,7 @@ export function addHandler (
   // normalize click.right and click.middle since they don't actually fire
   // this is technically browser-specific, but at least for now browsers are
   // the only target envs that have right/middle clicks.
+  // 鼠标右键事件
   if (modifiers.right) {
     if (dynamic) {
       name = `(${name})==='click'?'contextmenu':(${name})`
@@ -101,6 +108,7 @@ export function addHandler (
       delete modifiers.right
     }
   } else if (modifiers.middle) {
+    // 鼠标中间的按键事件
     if (dynamic) {
       name = `(${name})==='click'?'mouseup':(${name})`
     } else if (name === 'click') {
@@ -124,6 +132,7 @@ export function addHandler (
   }
 
   let events
+  // 如果有native修饰符，最后会被删除，添加的key为nativeEvents。否则就是event
   if (modifiers.native) {
     delete modifiers.native
     events = el.nativeEvents || (el.nativeEvents = {})
@@ -141,8 +150,19 @@ export function addHandler (
   if (Array.isArray(handlers)) {
     important ? handlers.unshift(newHandler) : handlers.push(newHandler)
   } else if (handlers) {
+    // 标志新添加的事件是放在前面还是后面
     events[name] = important ? [newHandler, handlers] : [handlers, newHandler]
   } else {
+    /**
+     * eg:
+     * {click:{
+     *  dynamic: false
+        end: 387
+        modifiers: {stop: true}
+        start: 354
+        value: "handleChange"
+     * }}
+     */
     events[name] = newHandler
   }
 

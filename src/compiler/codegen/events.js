@@ -2,6 +2,7 @@
 
 const fnExpRE = /^([\w$_]+|\([^)]*?\))\s*=>|^function(?:\s+[\w$]+)?\s*\(/
 const fnInvokeRE = /\([^)]*?\);*$/
+// 比如a.b  a['b'] a["b"]  a[0] a[b]
 const simplePathRE = /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*|\['[^']*?']|\["[^"]*?"]|\[\d+]|\[[A-Za-z_$][\w$]*])*$/
 
 // KeyboardEvent.keyCode aliases
@@ -51,26 +52,52 @@ const modifierCode: { [key: string]: string } = {
   middle: genGuard(`'button' in $event && $event.button !== 1`),
   right: genGuard(`'button' in $event && $event.button !== 2`)
 }
-
+// 添加事件
+// 生成事件相关的代码
 export function genHandlers (
+  /**
+   * eg:{
+   *  click:{
+    *  dynamic: false
+        end: 387
+        modifiers: {stop: true}
+        start: 354
+        value: "handleChange"
+   }
+   * }
+   */
   events: ASTElementHandlers,
+  // 是不是原生事件，被添加了native修饰符的就是原生事件
   isNative: boolean
 ): string {
   const prefix = isNative ? 'nativeOn:' : 'on:'
   let staticHandlers = ``
   let dynamicHandlers = ``
+  // name就是每一个事件名,比如click
   for (const name in events) {
+    // 返回生成的事件代码
+    // eg:function($event){$event.stopPropagation();return handleChange($event)}
     const handlerCode = genHandler(events[name])
     if (events[name] && events[name].dynamic) {
       dynamicHandlers += `${name},${handlerCode},`
     } else {
+      // 这里拼接完成之后是 eg:  click:function($event){$event.stopPropagation();return handleChange($event)}
       staticHandlers += `"${name}":${handlerCode},`
     }
   }
+  // 拼接{}
   staticHandlers = `{${staticHandlers.slice(0, -1)}}`
   if (dynamicHandlers) {
     return prefix + `_d(${staticHandlers},[${dynamicHandlers.slice(0, -1)}])`
   } else {
+    // 拼接
+    /**
+     * eg:
+     *
+     * on:{
+     *   click:function($event){$event.stopPropagation();return handleChange($event)}
+     * }
+     */
     return prefix + staticHandlers
   }
 }
@@ -92,20 +119,30 @@ function genWeexHandler (params: Array<any>, handlerCode: string) {
     `params:${JSON.stringify(bindings)}\n` +
     '}'
 }
-
+/**
+ * eg:handler = {
+ *  dynamic: false
+    end: 387
+    modifiers: {stop: true}
+    start: 354
+    value: "handleChange"
+ * }
+ */
 function genHandler (handler: ASTElementHandler | Array<ASTElementHandler>): string {
   if (!handler) {
     return 'function(){}'
   }
-
+  // 数组的话递归调用genHandler
   if (Array.isArray(handler)) {
     return `[${handler.map(handler => genHandler(handler)).join(',')}]`
   }
-
+  // 匹配路径或者方法名称，返回boolean
+  // 这种调用会匹配到这里的 handleChange
   const isMethodPath = simplePathRE.test(handler.value)
   const isFunctionExpression = fnExpRE.test(handler.value)
+  // eg: 这种调用handleChange($event)会匹配这里
   const isFunctionInvocation = simplePathRE.test(handler.value.replace(fnInvokeRE, ''))
-
+  // 没有修饰符的情况
   if (!handler.modifiers) {
     if (isMethodPath || isFunctionExpression) {
       return handler.value
@@ -114,6 +151,8 @@ function genHandler (handler: ASTElementHandler | Array<ASTElementHandler>): str
     if (__WEEX__ && handler.params) {
       return genWeexHandler(handler.params, handler.value)
     }
+    // 比如handleChange($event)这种情况会到这里的
+    // 可以直接使用$event的原因是被包括了一层函数
     return `function($event){${
       isFunctionInvocation ? `return ${handler.value}` : handler.value
     }}` // inline statement
@@ -121,10 +160,14 @@ function genHandler (handler: ASTElementHandler | Array<ASTElementHandler>): str
     let code = ''
     let genModifierCode = ''
     const keys = []
+    // 遍历修饰符
     for (const key in handler.modifiers) {
+      // 用当前的事件名称和modifierCode事件列表做匹配
+      // 生成事件的代码
       if (modifierCode[key]) {
         genModifierCode += modifierCode[key]
         // left/right
+        // 匹配keycode
         if (keyCodes[key]) {
           keys.push(key)
         }
@@ -144,6 +187,7 @@ function genHandler (handler: ASTElementHandler | Array<ASTElementHandler>): str
       code += genKeyFilter(keys)
     }
     // Make sure modifiers like prevent and stop get executed after key filtering
+    // 先拼接事件代码
     if (genModifierCode) {
       code += genModifierCode
     }
@@ -158,6 +202,7 @@ function genHandler (handler: ASTElementHandler | Array<ASTElementHandler>): str
     if (__WEEX__ && handler.params) {
       return genWeexHandler(handler.params, code + handlerCode)
     }
+    // eg:function($event){$event.stopPropagation();return handleChange($event)}
     return `function($event){${code}${handlerCode}}`
   }
 }

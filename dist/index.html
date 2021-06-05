@@ -8,16 +8,20 @@
   </head>
   <body>
     <div id="app">
-      <!-- <my-component-a></my-component-a> -->
-      <div v-if="a === 2" class="test" :class="{background:a===1 ? 'blue':'red'}">
+      <!-- <div v-if="a === 2" class="test" :class="{background:a===1 ? 'blue':'red'}" ref="gouzi">
           vIf
       </div>
       <div v-else>
         465
       </div>
-      <!-- <div v-for="(item,index) in list" v-if="index > 2">
+      <div v-for="(item,index) in list" v-if="index > 2">
         {{item}}:<{{index}}
       </div>
+      <div>
+        123
+      </div> -->
+      <my-component-a   a="3" @click.stop.native="handleChange($event)"></my-component-a>
+      <!--
       <div v-show="a === 1">
         vShow
       </div>
@@ -36,6 +40,11 @@
       data() {
         return {
           name:'dataA'
+        }
+      },
+      methods:{
+        handleChange() {
+
         }
       }
     }

@@ -58,6 +58,10 @@ export function generate (
   }
 }
 // 生成code
+/**
+ * 通过节点不同的类型，调用不同的函数处理。
+ *
+ */
 export function genElement (el: ASTElement, state: CodegenState): string {
   if (el.parent) {
     el.pre = el.pre || el.parent.pre
@@ -79,18 +83,21 @@ export function genElement (el: ASTElement, state: CodegenState): string {
     return genSlot(el, state)
   } else {
     // component or element
-    // 创建节点
+    //
     let code
+    // 组件
     if (el.component) {
       code = genComponent(el.component, el, state)
     } else {
       let data
       if (!el.plain || (el.pre && state.maybeComponent(el))) {
+        // eg:"{attrs:{"a":"3"}}"
         data = genData(el, state)
       }
 
       const children = el.inlineTemplate ? null : genChildren(el, state, true)
       // 根据ast调用vm._c创建vnode
+      // eg：_c('my-component-a',{attrs:{"a":"3"}})
       code = `_c('${el.tag}'${
         data ? `,${data}` : '' // data
       }${
@@ -189,6 +196,7 @@ function genIfConditions (
   }
 
   // v-if with v-once should generate code like (a)?_m(0):_m(1)
+  // 带有v-once的v-if应该产生类似(a)?_m(0):_m(1)的代码。
   function genTernaryExp (el) {
     return altGen
       ? altGen(el, state)
@@ -232,7 +240,16 @@ export function genFor (
       `return ${(altGen || genElement)(el, state)}` +
     '})'
 }
-
+/**
+ * 生成render函数中的data，一个json对象
+ * eg:
+ * _c('div',{
+ * staticClass:'xxx'
+ * })
+ *
+ *
+ *
+ */
 export function genData (el: ASTElement, state: CodegenState): string {
   let data = '{'
 
@@ -273,9 +290,20 @@ export function genData (el: ASTElement, state: CodegenState): string {
     data += `domProps:${genProps(el.props)},`
   }
   // event handlers
+  // 对事件做处理,这里的events和nativeEvents是在编译ast的end方法中,调用processElement，里面又掉用了processAttr(element),将匹配到事件添加到了当前ast的events或者nativeEvents中
+  // 通过最后一个参数来区分是不是原生事件
+  /**
+   * 经过事件处理的代码
+   * {
+   * attrs:{"a":"3"},
+   * on:{
+   *       "click":function($event){$event.stopPropagation();return handleChange($event)}
+   *    }
+   */
   if (el.events) {
     data += `${genHandlers(el.events, false)},`
   }
+  // 原生事件
   if (el.nativeEvents) {
     data += `${genHandlers(el.nativeEvents, true)},`
   }
@@ -476,7 +504,9 @@ function genScopedSlot (
   const reverseProxy = slotScope ? `` : `,proxy:true`
   return `{key:${el.slotTarget || `"default"`},fn:${fn}${reverseProxy}}`
 }
-
+/**
+ * 处理子节点，遍历每一个子节点，通过genNode函数通过不同的type调用genElement或者直接生成代码字符串返回
+ */
 export function genChildren (
   el: ASTElement,
   state: CodegenState,
@@ -484,6 +514,7 @@ export function genChildren (
   altGenElement?: Function,
   altGenNode?: Function
 ): string | void {
+  // 获取到当前节点的所有子元素
   const children = el.children
   if (children.length) {
     const el: any = children[0]
@@ -498,10 +529,15 @@ export function genChildren (
         : ``
       return `${(altGenElement || genElement)(el, state)}${normalizationType}`
     }
+    // 返回需要什么样的格式化程度
+    // 0：不需要规范化
+    // 1: 需要简单的规范化（可能是1级深的嵌套数组）。
+    // 2: 需要完全规范化
     const normalizationType = checkSkip
       ? getNormalizationType(children, state.maybeComponent)
       : 0
     const gen = altGenNode || genNode
+    // 对每一个children子节点执行genNode函数
     return `[${children.map(c => gen(c, state)).join(',')}]${
       normalizationType ? `,${normalizationType}` : ''
     }`
@@ -512,6 +548,13 @@ export function genChildren (
 // 0: no normalization needed
 // 1: simple normalization needed (possible 1-level deep nested array)
 // 2: full normalization needed
+/**
+ *
+ *  确定子代数组所需的规范化程度。
+    0：不需要规范化
+    1: 需要简单的规范化（可能是1级深的嵌套数组）。
+    2: 需要完全规范化
+ */
 function getNormalizationType (
   children: Array<ASTNode>,
   maybeComponent: (el: ASTElement) => boolean
@@ -522,6 +565,7 @@ function getNormalizationType (
     if (el.type !== 1) {
       continue
     }
+    // 对v-for或者el.tag === 'template',el.tag === 'slot'这些情况格式化
     if (needsNormalization(el) ||
         (el.ifConditions && el.ifConditions.some(c => needsNormalization(c.block)))) {
       res = 2
@@ -539,10 +583,13 @@ function needsNormalization (el: ASTElement): boolean {
   return el.for !== undefined || el.tag === 'template' || el.tag === 'slot'
 }
 
+// 对每一个ast做处理，节点重新调用genElement，其他节点直接拼接字符串返回
 function genNode (node: ASTNode, state: CodegenState): string {
+  // 节点元素
   if (node.type === 1) {
     return genElement(node, state)
   } else if (node.type === 3 && node.isComment) {
+    // 注释节点
     return genComment(node)
   } else {
     return genText(node)

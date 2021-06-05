@@ -556,6 +556,7 @@ export function processElement (
   for (let i = 0; i < transforms.length; i++) {
     element = transforms[i](element, options) || element
   }
+  // 处理节点上的属性
   processAttrs(element)
   return element
 }
@@ -692,11 +693,23 @@ function processIf (el) {
     }
   }
 }
-
+// v-if时候添加,当前节点所有的判断都会被添加到ifConditions中
 function processIfConditions (el, parent) {
   const prev = findPrevElement(parent.children)
   if (prev && prev.if) {
     addIfCondition(prev, {
+      // exp是当前v-if中的表达式，block是当前的判断节点
+      /**
+       * eg：{
+       *   if:a===2,
+       *   ifConditions:[{
+       *    exp:a===2,
+       *    block:{
+       *     tag:span,type:1,xxx...}
+       *   }]
+       *
+       * }
+       */
       exp: el.elseif,
       block: el
     })
@@ -726,7 +739,7 @@ function findPrevElement (children: Array<any>): ASTElement | void {
     }
   }
 }
-// v-if时候添加
+// v-if时候添加,当前节点所有的判断都会被添加到ifConditions中
 export function addIfCondition (el: ASTElement, condition: ASTIfCondition) {
   if (!el.ifConditions) {
     el.ifConditions = []
@@ -901,28 +914,43 @@ function processComponent (el) {
     el.inlineTemplate = true
   }
 }
-
+// 处理节点上的属性
 function processAttrs (el) {
+  // 获取到这个ast上的所有attrs列表开始遍历
   const list = el.attrsList
   let i, l, name, rawName, value, modifiers, syncGen, isDynamic
   for (i = 0, l = list.length; i < l; i++) {
     name = rawName = list[i].name
     value = list[i].value
+    // 是否满足指令的节点，匹配@ v-等等这些
+    // eg:name = @click.stop.native
     if (dirRE.test(name)) {
       // mark element as dynamic
       el.hasBindings = true
       // modifiers
+      // 返回一个对象
+      /**
+       * {
+       * native: true
+         stop: true
+       * }
+       */
       modifiers = parseModifiers(name.replace(dirRE, ''))
       // support .foo shorthand syntax for the .prop modifier
       if (process.env.VBIND_PROP_SHORTHAND && propBindRE.test(name)) {
         (modifiers || (modifiers = {})).prop = true
         name = `.` + name.slice(1).replace(modifierRE, '')
       } else if (modifiers) {
+        // 替换之后的eg: name=@click或者name= :er
         name = name.replace(modifierRE, '')
       }
+      // 是否有: v-bind的这种
       if (bindRE.test(name)) { // v-bind
+        // 去掉bind的前面的冒号  eg,:test之后处理过的name是test
         name = name.replace(bindRE, '')
+        // 获取到绑定的value值
         value = parseFilters(value)
+        // 是否动态属性 v-bind:[xxx]
         isDynamic = dynamicArgRE.test(name)
         if (isDynamic) {
           name = name.slice(1, -1)
@@ -989,11 +1017,25 @@ function processAttrs (el) {
           addAttr(el, name, value, list[i], isDynamic)
         }
       } else if (onRE.test(name)) { // v-on
+        // 处理v-on的情况，将修饰符替换掉
         name = name.replace(onRE, '')
         isDynamic = dynamicArgRE.test(name)
         if (isDynamic) {
           name = name.slice(1, -1)
         }
+        // 对当前的ast节点添加event属性或者nativeEvents属性,添加之后的ast会多一个event或者nativeEvents
+        // 如果有native修饰符，最后会被删除，添加的key为nativeEvents。否则就是event
+        /**
+         * {
+         *  nativeEvents：{
+         *       dynamic: false
+         *       end: 387
+         *       modifiers: {stop: true}
+         *       start: 354
+         *       value: "handleChange"
+         *   }
+         * }
+         */
         addHandler(el, name, value, modifiers, false, warn, list[i], isDynamic)
       } else { // normal directives
         name = name.replace(dirRE, '')
@@ -1049,8 +1091,9 @@ function checkInFor (el: ASTElement): boolean {
   }
   return false
 }
-
+// eg:name = click.stop.native
 function parseModifiers (name: string): Object | void {
+  // eg:match = ['.stop','.native']
   const match = name.match(modifierRE)
   if (match) {
     const ret = {}
