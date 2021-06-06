@@ -77,9 +77,9 @@ export function initMixin(Vue: Class<Component>) {
       vm._renderProxy = vm;
     }
     // expose real self
-    vm._self = vm
+    vm._self = vm;
     //  对vue实例一些属性进行赋值,比如$parent,$children,$refs,$root等
-    initLifecycle(vm)
+    initLifecycle(vm);
     // 初始化实例的事件系统,事件即包括使用v-on或@注册的自定义事件
     initEvents(vm);
     // 初始化模板,为组件上$slots、$scopeSlots、$createElement、$attrs、$listeners赋值
@@ -135,6 +135,7 @@ export function initInternalComponent(
   // 初始化了一系列属性
   const vnodeComponentOptions = parentVnode.componentOptions;
   opts.propsData = vnodeComponentOptions.propsData;
+  // 将父组件的事件传递给子组件，这样自定义事件才能获取到对应的执行函数
   opts._parentListeners = vnodeComponentOptions.listeners;
   opts._renderChildren = vnodeComponentOptions.children;
   opts._componentTag = vnodeComponentOptions.tag;

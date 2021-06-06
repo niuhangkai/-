@@ -409,7 +409,26 @@ export function createPatchFunction(backend) {
   }
 
   function invokeCreateHooks(vnode, insertedVnodeQueue) {
-
+    // 获取到入口函数添加的cbs中各个函数
+    /**
+     * eg:
+     * cbs = {
+     *  activate: [ƒ]
+        create: (8) [
+          0: updateAttrs(oldVnode, vnode)
+          1: updateClass(oldVnode, vnode)
+          2: updateDOMListeners(oldVnode, vnode)
+          3: updateDOMProps(oldVnode, vnode)
+          4: updateStyle(oldVnode, vnode)
+          5: _enter(_, vnode)
+          6: create(_, vnode)
+          7: updateDirectives(oldVnode, vnode)
+        ]
+        destroy: (2) [ƒ, ƒ]
+        remove: [ƒ]
+        update:: (7) [ƒ, ƒ, ƒ, ƒ, ƒ, ƒ, ƒ]
+     * }
+     */
     for (let i = 0; i < cbs.create.length; ++i) {
       cbs.create[i](emptyNode, vnode);
     }
@@ -639,8 +658,8 @@ export function createPatchFunction(backend) {
       } else {
         // 以上几种情况都不是的话
         if (isUndef(oldKeyToIdx))
-        // 根据老节点上的key值创建一个对象
-        /**
+          // 根据老节点上的key值创建一个对象
+          /**
          *oldKeyToIdx = {
           //  key是节点上的key，后面的value是节点索引
            1:0,,
@@ -648,11 +667,11 @@ export function createPatchFunction(backend) {
           }
          */
           oldKeyToIdx = createKeyToOldIdx(oldCh, oldStartIdx, oldEndIdx);
-          // 是否定义了新开始节点的key，有的话去oldKeyToIdx这个对象中寻找
+        // 是否定义了新开始节点的key，有的话去oldKeyToIdx这个对象中寻找
         idxInOld = isDef(newStartVnode.key)
           ? oldKeyToIdx[newStartVnode.key]
           : findIdxInOld(newStartVnode, oldCh, oldStartIdx, oldEndIdx);
-          // 没有从当前的oldKeyToIdx这个对象中找到，vue认为是一个新元素，创建新元素
+        // 没有从当前的oldKeyToIdx这个对象中找到，vue认为是一个新元素，创建新元素
         if (isUndef(idxInOld)) {
           // New element
           createElm(

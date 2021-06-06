@@ -43,7 +43,7 @@ const componentVNodeHooks = {
     } else {
       // 返回vm实例
       const child = (vnode.componentInstance = createComponentInstanceForVnode(
-        // App对象,占位符VNode
+        // App对象,占位符组件VNode
         vnode,
         // 这里的activeInstance 是一个全局变量，定义在initLifecycle.js中。
         // 在lifecycleMixin方法执行时候通过setActiveInstance方法赋值为当前的vm
@@ -194,6 +194,8 @@ export function createComponent(
   // extract listeners, since these needs to be treated as
   // child component listeners instead of DOM listeners
   // 自定义事件的处理
+  // 在ast创建过程中，会把原生的.native修饰符的添加为nativeOn，普通事件为on这里做了修改，在on上面页添加了
+  // on可能是自定义事件，nativeOn是原生事件，自定义事件赋值给了listeners
   const listeners = data.on;
   // replace with listeners with .native modifier
   // so it gets processed during parent component patch.
