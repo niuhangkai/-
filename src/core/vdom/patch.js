@@ -824,7 +824,7 @@ export function createPatchFunction(backend) {
     const oldCh = oldVnode.children;
     const ch = vnode.children;
     if (isDef(data) && isPatchable(vnode)) {
-      // 更新节点attr
+      // 更新节点attr,比如指令等等，v-show也是这里的入口
       for (i = 0; i < cbs.update.length; ++i) cbs.update[i](oldVnode, vnode);
       if (isDef((i = data.hook)) && isDef((i = i.update))) i(oldVnode, vnode);
     }

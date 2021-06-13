@@ -923,7 +923,8 @@ function processAttrs (el) {
     name = rawName = list[i].name
     value = list[i].value
     // 是否满足指令的节点，匹配@ v-等等这些
-    // eg:name = @click.stop.native
+    // eg:  name = @click.stop.native
+    // eg:  name = v-model
     if (dirRE.test(name)) {
       // mark element as dynamic
       el.hasBindings = true
@@ -1038,8 +1039,13 @@ function processAttrs (el) {
          */
         addHandler(el, name, value, modifiers, false, warn, list[i], isDynamic)
       } else { // normal directives
+        // 不是v-on或者v-bind情况走这里
+        // 首先截取出来name
+        // eg:  name = model, name= text, name = html,或者自定义指令都会执行这里
         name = name.replace(dirRE, '')
         // parse arg
+        // 截取参数
+        // eg: v-model:a
         const argMatch = name.match(argRE)
         let arg = argMatch && argMatch[1]
         isDynamic = false
@@ -1050,6 +1056,8 @@ function processAttrs (el) {
             isDynamic = true
           }
         }
+        // 给当前的ast节点增加directives
+        // eg: directives:[{name:model,rawName:v-model}]
         addDirective(el, name, rawName, value, arg, isDynamic, modifiers, list[i])
         if (process.env.NODE_ENV !== 'production' && name === 'model') {
           checkForAliasModel(el, value)

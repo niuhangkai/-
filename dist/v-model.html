@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<script src="./vue.js"></script>
+<body>
+  <div id="app">
+    <div v-show="name" @click="name = false">55555555</div>
+    <!-- <com-a v-model="name"></com-a> -->
+    <!-- name:{{name}} -->
+    <!-- <input  v-model="name" type="text"> -->
+  </div>
+</body>
+<script>
+  let comA = {
+    props:['value'],
+    template:'<div>{{value}}</div>'
+  }
+  new Vue({
+      el: '#app',
+      components:{
+        comA
+      },
+      data() {
+        return {
+          name:true
+        }
+      }
+    })
+
+</script>
+</html>

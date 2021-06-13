@@ -10,16 +10,33 @@ let warn
 // so we used some reserved tokens during compile.
 export const RANGE_TOKEN = '__r'
 export const CHECKBOX_RADIO_TOKEN = '__c'
-
+// 这里是处理v-model的逻辑
 export default function model (
+  // 当期的ast
   el: ASTElement,
+  // 指令
+  /**
+   *  arg: null
+      end: 58
+      isDynamicArg: false
+      modifiers: undefined
+      name: "model"
+      rawName: "v-model"
+      start: 44
+      // 绑定的data中的值
+      value: "name"
+   */
   dir: ASTDirective,
   _warn: Function
 ): ?boolean {
   warn = _warn
+  // 获取到绑定的data中的值 eg: name(v-model="name")
   const value = dir.value
+  // 获取指令修饰符 eg:v-model.number = xxx
   const modifiers = dir.modifiers
+  // 获取到目标节点标签名 eg:input
   const tag = el.tag
+  // 获取到当前节点上的type值 eg:text
   const type = el.attrsMap.type
 
   if (process.env.NODE_ENV !== 'production') {
@@ -33,20 +50,25 @@ export default function model (
       )
     }
   }
-
+  // 处理el是组件情况
   if (el.component) {
     genComponentModel(el, value, modifiers)
     // component v-model doesn't need extra runtime
     return false
   } else if (tag === 'select') {
+    // 处理el是select
     genSelect(el, value, modifiers)
   } else if (tag === 'input' && type === 'checkbox') {
+    // 处理是多选框
     genCheckboxModel(el, value, modifiers)
   } else if (tag === 'input' && type === 'radio') {
+    // 处理单选框
     genRadioModel(el, value, modifiers)
   } else if (tag === 'input' || tag === 'textarea') {
+    // 处理文本域
     genDefaultModel(el, value, modifiers)
   } else if (!config.isReservedTag(tag)) {
+    // 其余情况处理
     genComponentModel(el, value, modifiers)
     // component v-model doesn't need extra runtime
     return false
@@ -123,7 +145,7 @@ function genSelect (
   code = `${code} ${genAssignmentCode(value, assignment)}`
   addHandler(el, 'change', code, null, true)
 }
-
+// 处理默认的v-model情况，比如<input v-model="name" type="text"/>
 function genDefaultModel (
   el: ASTElement,
   value: string,
@@ -161,13 +183,37 @@ function genDefaultModel (
   if (number) {
     valueExpression = `_n(${valueExpression})`
   }
-
+  // 生成一段赋值代码
+  // eg: "name=$event.target.value"
   let code = genAssignmentCode(value, valueExpression)
+  //
   if (needCompositionGuard) {
     code = `if($event.target.composing)return;${code}`
   }
-
+  // 关键方法，添加prop为value的属性
+  /**
+   * 当前ast添加props属性
+   * props:[
+   *   {
+   *    dynamic: undefined
+        name: "value"
+        value: "(name)"
+      }]
+   */
+  // 相当于<input :value="name" @input="name=$event.target.value">
   addProp(el, 'value', `(${value})`)
+  // eg:el=ast    event=input  code="if($event.target.composing)return;name=$event.target.value"
+  // 给当前el添加事件，处理完的el中会包含一个events的属性,里面有一个input事件
+  /**
+   * {
+   *  events:{
+   *    input:{
+   *      dynamic: undefined
+   *      value: "if($event.target.composing)return;name=$event.target.value"}
+   *   }
+   * }
+   *
+   */
   addHandler(el, event, code, null, true)
   if (trim || number) {
     addHandler(el, 'blur', '$forceUpdate()')

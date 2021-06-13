@@ -13,8 +13,10 @@ export default {
   bind (el: any, { value }: VNodeDirective, vnode: VNodeWithData) {
     vnode = locateNode(vnode)
     const transition = vnode.data && vnode.data.transition
+    // 缓存原来的值
     const originalDisplay = el.__vOriginalDisplay =
       el.style.display === 'none' ? '' : el.style.display
+      // 过渡动画
     if (value && transition) {
       vnode.data.show = true
       enter(vnode, () => {
@@ -24,7 +26,7 @@ export default {
       el.style.display = value ? originalDisplay : 'none'
     }
   },
-
+  // 更新时候
   update (el: any, { value, oldValue }: VNodeDirective, vnode: VNodeWithData) {
     /* istanbul ignore if */
     if (!value === !oldValue) return
@@ -33,6 +35,7 @@ export default {
     if (transition) {
       vnode.data.show = true
       if (value) {
+
         enter(vnode, () => {
           el.style.display = el.__vOriginalDisplay
         })
@@ -42,6 +45,7 @@ export default {
         })
       }
     } else {
+      // 没有过渡动画直接根据新绑定的值返回对应的
       el.style.display = value ? el.__vOriginalDisplay : 'none'
     }
   },

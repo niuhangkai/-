@@ -3,11 +3,13 @@
 /**
  * Cross-platform code generation for component v-model
  */
+// 处理组件v-model情况
 export function genComponentModel (
   el: ASTElement,
   value: string,
   modifiers: ?ASTModifiers
 ): ?boolean {
+  //获取到修饰符
   const { number, trim } = modifiers || {}
 
   const baseValueExpression = '$$v'
@@ -21,8 +23,17 @@ export function genComponentModel (
   if (number) {
     valueExpression = `_n(${valueExpression})`
   }
+  // eg: "name=$$v"
   const assignment = genAssignmentCode(value, valueExpression)
-
+  /**
+   * eg:
+   * el.model={
+   *    callback: "function ($$v) {name=$$v}"
+        expression: "\"name\""
+        value: "(name)"
+   * }
+   */
+  // 给当前的el增加一个model对象
   el.model = {
     value: `(${value})`,
     expression: JSON.stringify(value),
@@ -33,12 +44,22 @@ export function genComponentModel (
 /**
  * Cross-platform codegen helper for generating v-model value assignment code.
  */
+// 跨平台共享的处理v-model代码
 export function genAssignmentCode (
   value: string,
   assignment: string
 ): string {
+  // 处理v-model的各种可能的绑定值的情况
+  // 最后返回的res是一个对象
+  /**
+   * {
+      exp: name,
+      key: xx
+    }
+   */
   const res = parseModel(value)
   if (res.key === null) {
+    // eg: "name=$event.target.value"
     return `${value}=${assignment}`
   } else {
     return `$set(${res.exp}, ${res.key}, ${assignment})`

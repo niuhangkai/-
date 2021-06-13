@@ -26,6 +26,17 @@ export class CodegenState {
     this.warn = options.warn || baseWarn
     this.transforms = pluckModuleFunction(options.modules, 'transformCode')
     this.dataGenFns = pluckModuleFunction(options.modules, 'genData')
+    // directives，里面定义了指令的一系列的辅助函数
+    /**
+     *  this.directives = {
+     *    bind:  bind(el, dir),
+          cloak:  noop(a, b, c),
+          html:  html(el, dir),
+          model:  model( el, dir, _warn ),
+          on:  on(el, dir),
+          text:  text(el, dir)
+       }
+     */
     this.directives = extend(extend({}, baseDirectives), options.directives)
     const isReservedTag = options.isReservedTag || no
     this.maybeComponent = (el: ASTElement) => !!el.component || !isReservedTag(el.tag)
@@ -255,6 +266,8 @@ export function genData (el: ASTElement, state: CodegenState): string {
 
   // directives first.
   // directives may mutate the el's other properties before they are generated.
+  // 解析处理指令
+  // eg: directives:[{name:"model",rawName:"v-model",value:(name),expression:"name"}]
   const dirs = genDirectives(el, state)
   if (dirs) data += dirs + ','
 
@@ -317,6 +330,8 @@ export function genData (el: ASTElement, state: CodegenState): string {
     data += `${genScopedSlots(el, el.scopedSlots, state)},`
   }
   // component v-model
+  // v-model组件的
+  // 拼接之后为{model:{value:(name),callback:function ($$v) {name=$$v},expression:"name"},
   if (el.model) {
     data += `model:{value:${
       el.model.value
@@ -350,22 +365,39 @@ export function genData (el: ASTElement, state: CodegenState): string {
   }
   return data
 }
-
+// 解析指令
 function genDirectives (el: ASTElement, state: CodegenState): string | void {
+  // 获取到当前的指令数组
   const dirs = el.directives
   if (!dirs) return
   let res = 'directives:['
   let hasRuntime = false
   let i, l, dir, needRuntime
+  // 遍历指令数组
   for (i = 0, l = dirs.length; i < l; i++) {
     dir = dirs[i]
     needRuntime = true
+    // 获取到指令对应的辅助函数
+    /**
+     * directives = {
+     *  bind:  bind$1(el, dir)
+        cloak:  noop(a, b, c)
+        html:  html(el, dir)
+        model:  model( el, dir, _warn )
+        on:  on(el, dir)
+        text:  text(el, dir)
+        }
+     */
+    // 假设，name是model，gen就是对应的model函数
     const gen: DirectiveFunction = state.directives[dir.name]
     if (gen) {
       // compile-time directive that manipulates AST.
       // returns true if it also needs a runtime counterpart.
+      // 执行对应的辅助函数
+      // 如果是model,会给当前的ast(el),增加一个props为value和events:{input:{value:name="$event.target.value"}}
       needRuntime = !!gen(el, dir, state.warn)
     }
+    // 给当前拼接代码
     if (needRuntime) {
       hasRuntime = true
       res += `{name:"${dir.name}",rawName:"${dir.rawName}"${
@@ -378,6 +410,7 @@ function genDirectives (el: ASTElement, state: CodegenState): string | void {
     }
   }
   if (hasRuntime) {
+    // eg: directives:[{name:"model",rawName:"v-model",value:(name),expression:"name"}]"
     return res.slice(0, -1) + ']'
   }
 }
