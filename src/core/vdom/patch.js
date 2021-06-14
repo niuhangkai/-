@@ -285,7 +285,9 @@ export function createPatchFunction(backend) {
     let i = vnode.data;
     // 判断data是否存在
     if (isDef(i)) {
-      // keep-alive相关
+      // keep-alive相关，这里vnode是当前keepAlive中的子组件，因为在keep-alive中。是通过
+      // vnode = this.$slot.default获取的vnode，然后vnode把的vnode.data.keepAlive置为true
+      // 这里第一次vnode.componentInstance实例还不存在，解析到keep-alive组件时候，会获取到下面第一个子组件的实例，设置keepAlive为true
       const isReactivated = isDef(vnode.componentInstance) && i.keepAlive;
       // 这里判断了一下是否存在init钩子，存在的话执行组件的init钩子
       if (isDef((i = i.hook)) && isDef((i = i.init))) {
@@ -299,7 +301,7 @@ export function createPatchFunction(backend) {
       // in that case we can just return the element and be done.
       if (isDef(vnode.componentInstance)) {
         initComponent(vnode, insertedVnodeQueue);
-        // 节点插入，有子向父，
+        // 节点插入，子元素向父元素中插入
         insert(parentElm, vnode.elm, refElm);
         if (isTrue(isReactivated)) {
           reactivateComponent(vnode, insertedVnodeQueue, parentElm, refElm);
@@ -317,7 +319,7 @@ export function createPatchFunction(backend) {
       );
       vnode.data.pendingInsert = null;
     }
-    // 返回给helloWorld占位符节点，vnode.componentInstance.$el实是__PATCH__生成的渲染珍视dom
+    // 返回给helloWorld占位符节点，vnode.componentInstance.$el实是__PATCH__生成的渲染真实dom
     vnode.elm = vnode.componentInstance.$el;
     if (isPatchable(vnode)) {
       invokeCreateHooks(vnode, insertedVnodeQueue);

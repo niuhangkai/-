@@ -41,6 +41,7 @@ const componentVNodeHooks = {
       const mountedNode: any = vnode; // work around flow
       componentVNodeHooks.prepatch(mountedNode, mountedNode);
     } else {
+      // 没有keep-alive就实例化
       // 返回vm实例
       const child = (vnode.componentInstance = createComponentInstanceForVnode(
         // App对象,占位符组件VNode
@@ -59,6 +60,7 @@ const componentVNodeHooks = {
   // 这里在patch过程中，比对vnode为相同vnode的patch时候
   prepatch(oldVnode: MountedComponentVNode, vnode: MountedComponentVNode) {
     const options = vnode.componentOptions;
+    // 上面通过init方法创建的vnode.componentInstance
     const child = (vnode.componentInstance = oldVnode.componentInstance);
     updateChildComponent(
       child,

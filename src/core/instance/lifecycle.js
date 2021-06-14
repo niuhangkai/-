@@ -55,6 +55,8 @@ export function initLifecycle(vm: Component) {
    */
   // 子组件在当前的vm中实例化，所以可以通过activeInstance设置为当前的parent
   let parent = options.parent;
+  // abstract 抽象组件，比如keep-alive就是抽象组件
+  //
   if (parent && !options.abstract) {
     while (parent.$options.abstract && parent.$parent) {
       parent = parent.$parent;
@@ -342,6 +344,7 @@ export function updateChildComponent(
   updateComponentListeners(vm, listeners, oldListeners);
 
   // resolve slots + force update if has children
+  // 插槽会被vm.$forceUpdate()强制更新
   if (needsForceUpdate) {
     vm.$slots = resolveSlots(renderChildren, parentVnode.context);
     vm.$forceUpdate();
