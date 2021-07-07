@@ -34,6 +34,8 @@ const strats = config.optionMergeStrategies
 if (process.env.NODE_ENV !== 'production') {
   strats.el = strats.propsData = function (parent, child, vm, key) {
     if (!vm) {
+      // 没有vm，说明处理的是子组件
+      // 比如在子组件使用了el或者一些别的选项，会有这个警告
       warn(
         `option "${key}" can only be used during instance ` +
         'creation with the `new` keyword.'
@@ -42,10 +44,13 @@ if (process.env.NODE_ENV !== 'production') {
     return defaultStrat(parent, child)
   }
 }
-
+// 最终合并策略data的
 /**
  * Helper that recursively merges two data objects together.
  */
+// to:子选项
+// from：父选项
+// 也可以说是将 parentVal 对象的属性混合到 childVal 中，最后返回的是处理后的 childVal 对象。
 function mergeData (to: Object, from: ?Object): Object {
   if (!from) return to
   let key, toVal, fromVal
@@ -72,7 +77,7 @@ function mergeData (to: Object, from: ?Object): Object {
   }
   return to
 }
-
+// 选项data的合并策略
 /**
  * Data
  */
@@ -82,13 +87,18 @@ export function mergeDataOrFn (
   vm?: Component
 ): ?Function {
   if (!vm) {
+    // 这里是处理子组件
+    // vue.extend,两个data都应该是函数
     // in a Vue.extend merge, both should be functions
+    // 子组件没有data，返回父组件
     if (!childVal) {
       return parentVal
     }
+    // 父组件没有，返回子组件的data
     if (!parentVal) {
       return childVal
     }
+    // 如果有父的data，也有子的data，执行下面
     // when parentVal & childVal are both present,
     // we need to return a function that returns the
     // merged result of both functions... no need to
@@ -101,6 +111,7 @@ export function mergeDataOrFn (
       )
     }
   } else {
+    // 非子组件，new操作符生成的
     return function mergedInstanceDataFn () {
       // instance merge
       const instanceData = typeof childVal === 'function'
@@ -117,14 +128,17 @@ export function mergeDataOrFn (
     }
   }
 }
-
+// data选项的合并策略
 strats.data = function (
   parentVal: any,
   childVal: any,
   vm?: Component
 ): ?Function {
+  // vm不存在，是处理子组件选项
   if (!vm) {
+
     if (childVal && typeof childVal !== 'function') {
+      // 子组件的data必须是一个函数，否则报错
       process.env.NODE_ENV !== 'production' && warn(
         'The "data" option should be a function ' +
         'that returns a per-instance value in component ' +
@@ -134,15 +148,17 @@ strats.data = function (
 
       return parentVal
     }
+    // 处理子组件data合并，不需要vm
     return mergeDataOrFn(parentVal, childVal)
   }
-
+   // 处理根组件data合并，需要vm
   return mergeDataOrFn(parentVal, childVal, vm)
 }
 
 /**
  * Hooks and props are merged as arrays.
  */
+// 生命周期合并策略
 function mergeHook (
   parentVal: ?Array<Function>,
   childVal: ?Function | ?Array<Function>
@@ -168,7 +184,20 @@ function dedupeHooks (hooks) {
   }
   return res
 }
-
+/**
+ * LIFECYCLE_HOOKS =
+ *'beforeCreate',
+  'created',
+  'beforeMount',
+  'mounted',
+  'beforeUpdate',
+  'updated',
+  'beforeDestroy',
+  'destroyed',
+  'activated',
+  'deactivated',
+  'errorCaptured'
+ */
 LIFECYCLE_HOOKS.forEach(hook => {
   strats[hook] = mergeHook
 })
@@ -205,6 +234,7 @@ ASSET_TYPES.forEach(function (type) {
  * Watchers hashes should not overwrite one
  * another, so we merge them as arrays.
  */
+// watch的合并策略
 strats.watch = function (
   parentVal: ?Object,
   childVal: ?Object,
@@ -212,14 +242,17 @@ strats.watch = function (
   key: string
 ): ?Object {
   // work around Firefox's Object.prototype.watch...
+  // 处理Firefox的Object.prototype.watch
   if (parentVal === nativeWatch) parentVal = undefined
   if (childVal === nativeWatch) childVal = undefined
   /* istanbul ignore if */
+  // 子组件watch不存在
   if (!childVal) return Object.create(parentVal || null)
   if (process.env.NODE_ENV !== 'production') {
     assertObjectType(key, childVal, vm)
   }
   if (!parentVal) return childVal
+  // 下面parentVal和children都存在
   const ret = {}
   extend(ret, parentVal)
   for (const key in childVal) {
@@ -250,17 +283,22 @@ strats.props =
     if (childVal && process.env.NODE_ENV !== 'production') {
       assertObjectType(key, childVal, vm)
     }
+    // 父组件没有，返回子组件
     if (!parentVal) return childVal
     const ret = Object.create(null)
+    // parent拷贝到ret上
     extend(ret, parentVal)
+    // childVal拷贝到ret上，相同的会被覆盖
     if (childVal) extend(ret, childVal)
     return ret
+
   }
 strats.provide = mergeDataOrFn
 
 /**
  * Default strategy.
  */
+// 默认合并策略
 const defaultStrat = function (parentVal: any, childVal: any): any {
   return childVal === undefined
     ? parentVal
@@ -399,6 +437,19 @@ function assertObjectType (name: string, value: any, vm: ?Component) {
 */
 export function mergeOptions (
   // vue默认配置
+  /**
+   * components: {
+      KeepAlive,
+      Transition,
+      TransitionGroup
+    },
+    directives:{
+        model,
+        show
+    },
+    filters: Object.create(null),
+    _base: Vue
+   */
   parent: Object,
   child: Object,
   vm?: Component
@@ -415,15 +466,19 @@ export function mergeOptions (
   normalizeProps(child, vm)
   normalizeInject(child, vm)
   normalizeDirectives(child)
-
+  /**
+   * 注意第三个参数vm，在vue.mixin和vue.extend,都没有传递第三个参数，只有在实例化的mergeOptions才传递了vm
+   */
   // Apply extends and mixins on the child options,
   // but only if it is a raw options object that isn't
   // the result of another mergeOptions call.
   // Only merged options has the _base property.
+  // 先混入extends数据
   if (!child._base) {
     if (child.extends) {
       parent = mergeOptions(parent, child.extends, vm)
     }
+    // 混入mixins
     if (child.mixins) {
       for (let i = 0, l = child.mixins.length; i < l; i++) {
         parent = mergeOptions(parent, child.mixins[i], vm)
@@ -433,7 +488,7 @@ export function mergeOptions (
 
   const options = {}
   let key
-  // 对原生options遍历
+  // 对原生options遍历，拿到其中的key，就是选项的key
   for (key in parent) {
     mergeField(key)
   }
@@ -450,8 +505,13 @@ export function mergeOptions (
   //   props:mergeHook(parentValue,childrenValue),
   //   watch:mergeHook(parentValue,childrenValue),
   // }
+  /**
+   *
+   * 合并策略
+   * 生命周期合并策略，mergeHook函数
+   */
   function mergeField (key) {
-    // 找到对应的key
+    // 找到对应的key,这个函数的作用是找到对应的合并策略
     const strat = strats[key] || defaultStrat
     // 执行 mergeHook 方法，将当前的options[key]赋值
     options[key] = strat(parent[key], child[key], vm, key)

@@ -20,7 +20,7 @@
       <div>
         123
       </div> -->
-      <my-component-a   a="3" @click.stop.native="handleChange($event)"></my-component-a>
+      <my-component-a   :a="3" @click.stop.native="handleChange($event)"></my-component-a>
       <!--
       <div v-show="a === 1">
         vShow
@@ -32,15 +32,22 @@
         <p>123</p>
       </div> -->
     </div>
+    <div id="app1">
+      <my-component-a   :a="3" @click.stop.native="handleChange($event)"></my-component-a>
+    </div>
   </body>
   <script src="./vue.js"></script>
   <script>
     let compA = {
       template:'<div>{{name}}</div>',
+      props:['a'],
       data() {
         return {
           name:'dataA'
         }
+      },
+      created() {
+        console.log(this.$options)
       },
       methods:{
         handleChange() {
@@ -60,7 +67,7 @@
         "my-component-a":compA
       },
       created () {
-        console.log('current Vue instance')
+        console.log(this.$options)
       }
     })
   </script>

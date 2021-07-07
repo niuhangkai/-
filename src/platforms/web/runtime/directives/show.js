@@ -46,6 +46,7 @@ export default {
       }
     } else {
       // 没有过渡动画直接根据新绑定的值返回对应的
+      // 表达式计算为true,返回原来的属性,否则返回none
       el.style.display = value ? el.__vOriginalDisplay : 'none'
     }
   },
